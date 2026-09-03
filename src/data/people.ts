@@ -85,10 +85,19 @@ export const mifflin = (p: Person): number =>
    near 70 g if left alone, which is where muscle starts going instead of fat.
    The fat floor is the hormonal one — dal-heavy days fell to 25 g, about
    0.38 g/kg, before the tadka was fixed. */
-export const BANDS: Record<PersonId, { pMin: number; pMax: number; fMin: number }> = {
-  M: { pMin: 115, pMax: 148, fMin: 32 },
-  R: { pMin: 135, pMax: 175, fMin: 44 },
+export const BANDS: Record<PersonId, {
+  pMin: number; pMax: number; fMin: number; fMax: number; fbMin: number;
+}> = {
+  M: { pMin: 115, pMax: 148, fMin: 32, fMax: 58, fbMin: 20 },
+  R: { pMin: 135, pMax: 175, fMin: 44, fMax: 78, fbMin: 26 },
 };
+
+/* fMax and fbMin are new, and additive — the legacy solver had no upper bound on
+   fat at all. Without one, a three-meal vegetarian day chasing 139 g of protein
+   through low-fat paneer lands at 66 g of fat against a 42 g target, because
+   paneer carries 9 g of fat for every 21 g of protein. The ceilings are set just
+   above what the verified five-meal reference days already deliver:
+   Mrinal 39-55 g fat and 21-34 g fibre, Ramesh 52-71 g and 28-44 g. */
 
 /** How far a day may sit from its calorie target before the app says so. */
 export const KCAL_TOLERANCE = 40;

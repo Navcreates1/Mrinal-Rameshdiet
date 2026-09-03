@@ -35,5 +35,5 @@ export function report(name: string): never {
     process.exit(1);
   }
   console.log(`${name}: ${passed} assertions passed`);
-  process.exit(0);
+  return process.exit(0);
 }
