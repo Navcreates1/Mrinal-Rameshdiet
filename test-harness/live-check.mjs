@@ -51,6 +51,29 @@ ok(icon.status() === 200, 'the home-screen icon is served');
 const old = await p.request.get(new global.URL('Plan.html', URL).href);
 ok(old.status() === 200 && /url=\.\/">/.test(await old.text()), 'the old /Plan.html link now points at the new app');
 
+/* The QA findings, checked against what is actually deployed. */
+const sw = await p.request.get(new global.URL('sw.js', URL).href);
+ok(sw.status() === 200, 'sw.js is served, so the app works offline once installed');
+ok(/javascript/i.test(sw.headers()['content-type'] ?? ''),
+   `and with a JavaScript MIME type (${sw.headers()['content-type']}) — a worker will not register otherwise`);
+
+/* The clocks going back. 25 October appeared twice and 10 December was
+   unreachable; both are visible in the date strip. */
+const strip = await p.locator('.strip .chip').allInnerTexts();
+ok(strip.length === 102, `the date strip holds 102 days (${strip.length})`);
+ok(new Set(strip).size === 102, 'every one a different date — 25 Oct used to appear twice');
+ok(strip[strip.length - 1] === '10 Dec', `and the last is 10 Dec (${strip[strip.length - 1]})`);
+ok(strip.filter(d => d === '25 Oct').length === 1, 'the day the clocks go back appears once');
+
+/* Recipe text agrees with the rows it sits under. */
+const attaRow = await p.locator('.meal:has(.ing:has-text("Atta"))').first();
+if (await attaRow.count()) {
+  const grams = await attaRow.locator('.ing:has-text("Atta") .pcell.mm b').innerText();
+  const method = (await attaRow.locator('.method').innerText());
+  ok(method.includes(grams.trim()),
+     `the roti instruction quotes the same weight as the row (${grams.trim()} in "${method.slice(0, 60)}")`);
+}
+
 await p.screenshot({ path: '/tmp/shots/LIVE-today.png' });
 await b.close();
 if (fail.length) { console.error(`live-check: ${fail.length} FAILED, ${pass} passed`); fail.forEach((f,i)=>console.error(`  ${i+1}. ${f}`)); process.exit(1); }
