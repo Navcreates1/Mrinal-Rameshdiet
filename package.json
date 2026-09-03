@@ -1,0 +1,16 @@
+{
+  "name": "mrinal-ramesh-plan",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "14-week nutrition and grocery planner for Mrinal and Ramesh. Builds to one self-contained index.html — no backend, no runtime dependencies.",
+  "scripts": {
+    "build": "node build.js",
+    "test": "./test-harness/run-all.sh",
+    "check": "npm run build && npm test"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.0"
+  }
+}
