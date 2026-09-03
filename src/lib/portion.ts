@@ -30,7 +30,7 @@ import { PEOPLE, BANDS } from '../data/people.ts';
 import type { PersonId } from '../data/people.ts';
 import { gramsFor, ratioFor } from './scale.ts';
 import { per, rowsTotal, ZERO } from './macros.ts';
-import type { Macros, Row } from './macros.ts';
+import type { Macros, Row, Swaps } from './macros.ts';
 
 /** How far each slot type may move from its verified reference weight.
     Vegetables get a wide band because they are volume; oil gets a narrow one
@@ -99,9 +99,19 @@ export interface Budget {
 /** Scale one meal's shape to a slot budget. Returns the reference plate
     untouched when `budget` is omitted — that is how the original five-meal
     mode keeps working, byte for byte. */
-export function solveMeal(mid: string, who: PersonId, budget?: Budget): SolvedMeal {
-  const meal = M[mid];
-  if (!meal) throw new Error(`solveMeal: unknown meal '${mid}'`);
+export function solveMeal(mid: string, who: PersonId, budget?: Budget, swaps: Swaps = {}): SolvedMeal {
+  const base = M[mid];
+  if (!base) throw new Error(`solveMeal: unknown meal '${mid}'`);
+  /* Swaps are applied to the SHAPE before solving, so a swapped ingredient is
+     scaled by the solver like any other rather than being pinned at whatever
+     the swap sheet last computed. */
+  const meal = {
+    ...base,
+    x: base.x.map(([fid, g, t], i) => {
+      const sw = swaps[i];
+      return [sw?.fid ?? fid, sw?.g ?? g, t] as [string, number, typeof t];
+    }),
+  };
 
   const refRows: Row[] = meal.x.map(([fid, g, t]) => [fid, gramsFor(who, fid, g, t), t]);
   if (!budget) {

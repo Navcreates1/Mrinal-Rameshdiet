@@ -24,20 +24,28 @@ export const sum = (xs: Macros[]): Macros => xs.reduce(add, ZERO);
 
 export type Row = [fid: string, grams: number, type: SlotType];
 
+/** A swap replaces both the food AND its weight. Substituting the food alone
+    and keeping the grams turns 145 g of chicken into 145 g of Huel Black —
+    644 kcal instead of 154, which is half a day on one line. The rescaled
+    weight comes from swapGrams in lib/swap.ts and is carried in the record. */
+export type Swap = { fid: string; g: number };
+export type Swaps = Record<number, Swap>;
+
 /** A meal's ingredient rows for one person, with any swaps already applied. */
-export function mealRows(mid: string, who: PersonId, swaps: Record<number, string> = {}): Row[] {
+export function mealRows(mid: string, who: PersonId, swaps: Swaps = {}): Row[] {
   const meal = M[mid];
   if (!meal) throw new Error(`mealRows: unknown meal '${mid}'`);
   return meal.x.map(([fid, g, t], i) => {
-    const to = swaps[i];
-    const f = to ?? fid;
-    return [f, gramsFor(who, f, g, t), t] as Row;
+    const sw = swaps[i];
+    const f = sw?.fid ?? fid;
+    const base = sw?.g ?? g;
+    return [f, gramsFor(who, f, base, t), t] as Row;
   });
 }
 
 export const rowsTotal = (rows: Row[]): Macros => sum(rows.map(([fid, g]) => per(fid, g)));
 
-export const mealTotal = (mid: string, who: PersonId, swaps?: Record<number, string>): Macros =>
+export const mealTotal = (mid: string, who: PersonId, swaps?: Swaps): Macros =>
   rowsTotal(mealRows(mid, who, swaps));
 
 export const dayTotal = (ids: string[], who: PersonId): Macros =>

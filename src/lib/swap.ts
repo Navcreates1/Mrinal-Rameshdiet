@@ -9,6 +9,7 @@
 import { F } from '../data/foods.ts';
 import type { SlotType } from '../data/foods.ts';
 import { poolFor } from '../data/pools.ts';
+import { M as MEALS } from '../data/meals.ts';
 import { per } from './macros.ts';
 
 /** Energy cap on a swap: 1.3x the original plus 30 kcal.
@@ -32,6 +33,17 @@ export function swapGrams(type: SlotType, oldFid: string, oldG: number, newFid: 
   }
   const r = Math.max(5, Math.round(g / 5) * 5);
   return Math.min(r, n.ml ? MAX_ML : MAX_GRAMS);
+}
+
+/** Build the record that mealRows consumes: the new food AND its rescaled
+    reference weight, so the two can never drift apart. */
+export function makeSwap(mid: string, index: number, toFid: string): { fid: string; g: number } {
+  const meal = MEALS[mid];
+  if (!meal) throw new Error(`makeSwap: unknown meal '${mid}'`);
+  const line = meal.x[index];
+  if (!line) throw new Error(`makeSwap: ${mid} has no ingredient at index ${index}`);
+  const [fid, g, type] = line;
+  return { fid: toFid, g: swapGrams(type, fid, g, toFid) };
 }
 
 export interface SwapOption {
