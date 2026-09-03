@@ -16,6 +16,8 @@ const { url: URLBASE, close: closeServer } = await serve(8788);
 let passed = 0; const failures = [];
 const ok = (c, m) => { if (c) passed++; else failures.push(m); };
 const eq = (a, b, m) => ok(Object.is(a, b), `${m}\n      expected ${JSON.stringify(b)}, actual ${JSON.stringify(a)}`);
+const deepEqualish = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b),
+  `${m}\n      expected ${JSON.stringify(b)}\n      actual   ${JSON.stringify(a)}`);
 
 /* Fail loudly rather than sit at 100% forever: a hung wait is a defect in the
    test, and a test that hangs teaches nothing. */
@@ -64,16 +66,16 @@ await page.waitForSelector('.steps');
    old version never asked and served four non-vegetarian lunches. */
 eq(await page.locator('.dayrow').count(), 7, 'step 1 lists all seven days');
 eq(await page.locator('.dtype').count(), 21, 'each day offers Normal, Vegetarian and Eating out');
-const vegBefore = await page.locator('.dtype.on:has-text("Vegetarian")').count();
+const vegBefore = await page.locator('.dtype.on:text-is("Vegetarian")').count();
 eq(vegBefore, 0, 'week 1 has no festival days, so none is vegetarian by default');
 
-await page.click('.dayrow:nth-of-type(3) .dtype:has-text("Vegetarian")');
+await page.click('.dayrow:nth-of-type(3) .dtype:text-is("Vegetarian")');
 await page.waitForTimeout(120);
-eq(await page.locator('.dtype.on:has-text("Vegetarian")').count(), 1,
+eq(await page.locator('.dtype.on:text-is("Vegetarian")').count(), 1,
    'tapping Vegetarian on a normal day makes it vegetarian — the calendar is a default, not a verdict');
-await page.click('.dayrow:nth-of-type(6) .dtype:has-text("Eating out")');
+await page.click('.dayrow:nth-of-type(6) .dtype:text-is("Eating out")');
 await page.waitForTimeout(120);
-eq(await page.locator('.dtype.on:has-text("Eating out")').count(), 1, 'and a day can be dropped');
+eq(await page.locator('.dtype.on:text-is("Eating out")').count(), 1, 'and a day can be dropped');
 
 /* Step 2 — meals. Nothing pre-selected, and the vegetarian dishes are now here. */
 await page.click('.copybar button:has-text("Next")');
@@ -299,6 +301,75 @@ eq(mf.status(), 200, 'manifest.webmanifest is served as a real file, not a blob 
 const mfj = await mf.json();
 eq(mfj.display, 'standalone', 'and declares standalone display');
 ok(mfj.icons?.[0]?.src?.endsWith('.png'), 'with a real PNG icon, not a data: URI');
+
+console.error('  [uat] 10b. the page holds its place, and says what the choice is');
+/* ---------- 10b. reported 3 September ---------- */
+/* Naveen: "while selecting the recipes or the food, the page keeps scrolling up"
+   and "instead of normal, say non vegetarian or vegetarian".
+
+   Every interaction rebuilds #main, and draw() used to end with an
+   unconditional scrollTo(0). Picking the fourth dinner out of six threw you
+   back to the top, so choosing three meals meant scrolling down three times.
+   A screen change should start at the top; a toggle on the screen you are
+   already reading should not move you at all. */
+await page.click('#nav button[data-tab="shop"]');
+await page.waitForSelector('.steps');
+/* Week 1 already has a plan from the walk-through above, so the Shop tab opens
+   on the finished list. Week 2 is untouched and starts at step 1. */
+await page.click('.weeks .wk:nth-of-type(2)');
+await page.waitForSelector('.dayrow', { timeout: 15000 });
+
+const labels = await page.locator('.dayrow').first().locator('.dtype').allInnerTexts();
+deepEqualish(labels.map(t => t.trim()), ['Non-vegetarian', 'Vegetarian', 'Eating out'],
+  'the day control names both kinds of day instead of calling one of them "Normal"');
+ok(!(await page.locator('#main').innerText()).match(/\bNormal\b/),
+   'and the word "Normal" is gone from the screen entirely');
+
+/* Getting to the meals step, then scrolling well down it. */
+await page.click('.dayrow:nth-of-type(2) .dtype:text-is("Vegetarian")');
+await page.waitForTimeout(150);
+await page.click('.copybar button:has-text("Next")');
+await page.waitForSelector('.opt');
+
+const dinners = page.locator('.panel:has(h3:has-text("Dinner")) .opt');
+const lastDinner = dinners.nth(await dinners.count() - 1);
+await lastDinner.scrollIntoViewIfNeeded();
+await page.waitForTimeout(250);
+const before = await page.evaluate(() => window.scrollY);
+ok(before > 400, `scrolled down to the last dinner (${Math.round(before)}px)`);
+
+await lastDinner.click();
+await page.waitForTimeout(250);
+const after = await page.evaluate(() => window.scrollY);
+ok(Math.abs(after - before) < 60,
+   `picking a meal holds the page still (${Math.round(before)} -> ${Math.round(after)}px)`);
+ok(await lastDinner.getAttribute('aria-pressed') === 'true',
+   'and the meal it was actually on is the one that got selected');
+
+/* Vegetables, same thing: 27 chips, and the ones you want are not at the top. */
+await page.click('.copybar button:has-text("Next")');
+await page.waitForSelector('.vchip');
+const lastChip = page.locator('.vchip').nth(await page.locator('.vchip').count() - 1);
+await lastChip.scrollIntoViewIfNeeded();
+await page.waitForTimeout(250);
+const chipScrollBefore = await page.evaluate(() => window.scrollY);
+await lastChip.click();
+await page.waitForTimeout(250);
+ok(Math.abs((await page.evaluate(() => window.scrollY)) - chipScrollBefore) < 60,
+   'picking a vegetable holds the page still too');
+
+/* But a genuine screen change SHOULD start at the top. */
+await page.click('#nav button[data-tab="foods"]');
+await page.waitForSelector('.frow');
+await page.evaluate(() => window.scrollTo(0, 900));
+await page.waitForTimeout(150);
+await page.click('#nav button[data-tab="guide"]');
+await page.waitForTimeout(250);
+ok(await page.evaluate(() => window.scrollY) < 40,
+   'changing tab starts at the top of the new screen, as it should');
+
+await page.click('#nav button[data-tab="shop"]');
+await page.waitForTimeout(200);
 
 console.error('  [uat] 11. touch targets');
 /* ---------- 11. touch targets ---------- */

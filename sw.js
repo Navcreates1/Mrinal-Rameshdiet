@@ -7,7 +7,7 @@
    Cache-first for the shell, because the shell IS the app: one HTML file with
    the data inlined. There is no API to be stale against. A new build changes
    CACHE below, which drops every old entry on activate. */
-const CACHE = 'plan-9ed53c2de6dd';
+const CACHE = 'plan-46c6ca6fb356';
 const SHELL = ['./', './index.html', './icon.png', './manifest.webmanifest'];
 
 self.addEventListener('install', e => {

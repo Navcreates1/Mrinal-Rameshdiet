@@ -190,9 +190,10 @@ function viewDays(w: number): string {
       aria-pressed="${dayType(i) === t}">${label}</button>`;
 
   return `<div class="sec"><h2>Which days, and what kind?</h2>
-    <p>Set each day. The Ganesh Chaturthi and Dasara windows are already marked
-       vegetarian and say so — but any day can be vegetarian, for any reason.
-       Mark a day as eating out and it drops off the plan and off the list.</p></div>
+    <p>Set each day: <b>non-vegetarian</b>, <b>vegetarian</b>, or eating out.
+       The Ganesh Chaturthi and Dasara windows arrive already marked vegetarian
+       and say which festival — but any day can be vegetarian, for any reason.
+       Eating out drops the day off the plan and off the shopping list.</p></div>
   ${stepBar(w, 0)}
   <div class="panel">${idx.map(i => {
     const why = reasonFor(i);
@@ -200,11 +201,11 @@ function viewDays(w: number): string {
       <span class="dn">${esc(fmtLong(dayOf(i)))}
         ${why ? `<span class="pill v">${esc(why)}</span>` : ''}
         ${isOverriddenFestival(i) ? '<span class="pill warn">changed from the calendar</span>' : ''}</span>
-      <span class="dseg">${seg(i, 'normal', 'Normal')}${seg(i, 'vegetarian', 'Vegetarian')}${seg(i, 'out', 'Eating out')}</span>
+      <span class="dseg">${seg(i, 'normal', 'Non-vegetarian')}${seg(i, 'vegetarian', 'Vegetarian')}${seg(i, 'out', 'Eating out')}</span>
     </div>`;
   }).join('')}
     <p class="src">${vegN
-      ? `${vegN} vegetarian ${vegN === 1 ? 'day' : 'days'} and ${idx.length - vegN - outN} normal. Each day is planned against its own status — a mixed week is never rounded to one or the other.`
+      ? `${vegN} vegetarian ${vegN === 1 ? 'day' : 'days'} and ${idx.length - vegN - outN} non-vegetarian. Each day is planned against its own status — a mixed week is never rounded to one or the other.`
       : 'No vegetarian days this week. Tap any day above to make one.'}${outN ? ` ${outN} dropped.` : ''}</p>
   </div>
   <div class="copybar"><button data-step="1">Next — choose meals</button></div>`;
@@ -239,7 +240,7 @@ function viewMeals(w: number): string {
         ? `Pick at least ${Math.min(MIN_PER_SLOT, ids.length)} so the week has some variety.`
         : 'Add more if they want more variety.'}
         <button class="linkbtn" data-suggest="${slot}">Pick a good set for me</button></p>
-      ${mixed && nv.length ? '<p class="src"><b>For the normal days</b></p>' : ''}
+      ${mixed && nv.length ? '<p class="src"><b>For the non-vegetarian days</b></p>' : ''}
       ${nv.map(id => mealCardRow(id, slot)).join('')}
       ${mixed && veg.length ? '<p class="src" style="margin-top:10px"><b>For the vegetarian days</b></p>' : ''}
       ${veg.map(id => mealCardRow(id, slot)).join('')}
@@ -328,7 +329,7 @@ function viewWeekReview(w: number): string {
     const sol = { M: solveDay(d.core, d.later, 'M'), R: solveDay(d.core, d.later, 'R') };
     kcals.M.push(sol.M.total.k); kcals.R.push(sol.R.total.k);
     rows.push(`<div class="wrow${veg ? ' veg' : ''}">
-      <span class="dn">${esc(fmtShort(dayOf(day)))}${veg ? '<span class="pill v">veg</span>' : ''}</span>
+      <span class="dn">${esc(fmtShort(dayOf(day)))}${veg ? '<span class="pill v">vegetarian</span>' : ''}</span>
       <span class="wmeals">${[...d.core, ...d.later].map(mid => esc(M[mid]!.t)).join(' · ')}</span>
       <span class="wk"><b style="color:var(--chilli)">${Math.round(sol.M.total.k)}</b>
         <b style="color:var(--indigo)">${Math.round(sol.R.total.k)}</b></span></div>`);

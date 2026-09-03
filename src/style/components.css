@@ -12,7 +12,10 @@
 .dn{display:block;font-size:13.5px;font-weight:600;margin-bottom:8px}
 .dn .pill{margin-left:6px;vertical-align:1px}
 .dseg{display:flex;gap:4px;background:var(--rule);border-radius:10px;padding:3px}
-.dtype{flex:1;padding:8px 4px;border-radius:8px;font-size:12px;font-weight:600;color:var(--ink-2);line-height:1.2}
+.dtype{flex:1;min-width:0;padding:8px 3px;border-radius:8px;font-size:11.5px;font-weight:600;
+       color:var(--ink-2);line-height:1.25;hyphens:auto;overflow-wrap:anywhere;
+       display:flex;align-items:center;justify-content:center;text-align:center}
+@media (max-width:359px){.dtype{font-size:10.5px}}
 .dtype.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.10)}
 /* --marigold behind white text is 2.69:1. It is a fill for pills and banner
    grounds, not a background for type — the deep tone is what the hero already

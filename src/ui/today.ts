@@ -167,7 +167,7 @@ export function viewToday(): string {
       <button class="${state.mode === 'choose' ? 'on' : ''}" data-mode="choose">Choose &amp; swap</button>
       <button class="${state.mode === 'fixed' ? 'on' : ''}" data-mode="fixed">Same every day</button>
     </div>
-    ${veg ? `<div class="banner">${ico('greens')}<div><b>${why ? esc(why) + ' — vegetarian' : 'Vegetarian day'}.</b>
+    ${veg ? `<div class="banner">${ico('greens')}<div><b>${why ? esc(why) + ' — a vegetarian day' : 'A vegetarian day'}.</b>
       No meat, no fish, no eggs. Dairy is fine.${!why ? ' Set by hand on the Shop tab.' : ''}</div></div>` : ''}
     ${dayType(day) === 'out' ? `<div class="banner">${ico('rice')}<div><b>Marked as eating out.</b>
       This day is off the plan and off the shopping list. The meals below are what it would have been.</div></div>` : ''}

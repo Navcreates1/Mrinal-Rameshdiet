@@ -10,7 +10,7 @@ const shot=async(name,full=true)=>{await p.waitForTimeout(350);await p.screensho
 
 await shot('01-today');
 await p.click('#nav button[data-tab="shop"]'); await shot('02-shop-days');
-await p.click('.dayrow:nth-of-type(3) .dtype:has-text("Vegetarian")'); await p.waitForTimeout(200);
+await p.click('.dayrow:nth-of-type(3) .dtype:text-is("Vegetarian")'); await p.waitForTimeout(200);
 await shot('03-shop-days-veg');
 await p.click('.copybar button:has-text("Next")'); await shot('04-shop-meals-empty');
 for (const sl of ['b','l','d']) await p.click(`.linkbtn[data-suggest="${sl}"]`);

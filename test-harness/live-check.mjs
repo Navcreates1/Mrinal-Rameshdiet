@@ -24,7 +24,7 @@ ok(await p.locator('.miniring').count() === 2, 'a ring for each of them');
 await p.click('#nav button:has-text("Shop")');
 await p.waitForSelector('.steps', { timeout: 10000 });
 ok(await p.locator('.dtype').count() === 21, 'THE SHOP TAB EXISTS, and every day offers Normal / Vegetarian / Eating out');
-await p.click('.dayrow:nth-of-type(3) .dtype:has-text("Vegetarian")');
+await p.click('.dayrow:nth-of-type(3) .dtype:text-is("Vegetarian")');
 await p.waitForTimeout(300);
 await p.click('.copybar button:has-text("Next")');
 await p.waitForSelector('.opt');

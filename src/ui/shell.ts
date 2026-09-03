@@ -61,7 +61,11 @@ function drawStrip(): void {
     return `<button class="chip${i === state.day ? ' on' : ''}${t === 'vegetarian' ? ' veg' : ''}${t === 'out' ? ' out' : ''}"
       data-day="${i}">${esc(fmtShort(dayOf(i)))}</button>`;
   }).join('');
-  strip.querySelector('.chip.on')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  /* Centre the selected date WITHOUT scrollIntoView: that scrolls every
+     scrollable ancestor, including the page, so redrawing the strip could move
+     the whole screen. This only ever touches the strip's own scrollLeft. */
+  const on = strip.querySelector<HTMLElement>('.chip.on');
+  if (on) strip.scrollLeft = on.offsetLeft - (strip.clientWidth - on.offsetWidth) / 2;
 }
 
 function drawNav(): void {
@@ -93,11 +97,23 @@ function crashScreen(err: unknown, where: string): string {
   </div>`;
 }
 
-export function draw(): void {
+/* Where the page should sit after a redraw.
+   'keep'  the reader has not moved screens — hold their place.
+   'top'   a new screen: tab, wizard step, week or day. Start at the top.
+
+   Every interaction rebuilds #main from scratch, and draw() used to end with
+   an unconditional scrollTo(0). Picking the fourth dinner from a list of six
+   threw you back to the top of the page, so choosing three meals meant
+   scrolling down three times. The re-render is the right model at this size;
+   throwing the reader's position away with it was not. */
+export type Land = 'keep' | 'top';
+
+export function draw(land: Land = 'keep'): void {
   const views: Record<TabId, () => string> = {
     today: viewToday, shop: viewShop, plan: viewPlan,
     foods: viewFoods, weight: viewWeight, guide: viewGuide,
   };
+  const wasAt = window.scrollY;
   let body: string;
   try {
     body = views[state.tab]();
@@ -110,7 +126,16 @@ export function draw(): void {
       This browser is blocking storage — private mode, most likely. Weigh-ins, prices and
       cupboard answers will vanish on reload.</div></div>` : '') + body;
   try { drawHero(); drawStrip(); drawNav(); } catch (err) { console.error('[draw] chrome failed', err); }
-  window.scrollTo({ top: 0 });
+
+  if (land === 'top') {
+    window.scrollTo({ top: 0 });
+    return;
+  }
+  /* The new screen can be shorter than the old one — restoring a position past
+     its end would leave the reader staring at the footer. Clamp, and do it
+     synchronously so there is no visible jump. */
+  const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  window.scrollTo({ top: Math.min(wasAt, max), behavior: 'instant' as ScrollBehavior });
 }
 
 /* ------------------------------------------------------------------ sheets */
@@ -208,19 +233,19 @@ function onClick(e: Event): void {
   if (d.reset) {
     if (!confirm('Clear the saved plan on this device and start again?\n\nWeigh-ins, prices and cupboard answers go too.')) return;
     resetAll();
-    return draw();
+    return draw('top');
   }
-  if (d.tab) { state.tab = d.tab as TabId; persist(); return draw(); }
-  if (d.day) { state.day = Number(d.day); return draw(); }
+  if (d.tab) { state.tab = d.tab as TabId; persist(); return draw('top'); }
+  if (d.day) { state.day = Number(d.day); return draw('top'); }
   if (d.who) { state.who = d.who as Who; persist(); return draw(); }
   if (d.mode) { state.mode = d.mode as 'choose' | 'fixed'; persist(); return draw(); }
   if (d.logwho) { state.logWho = d.logwho as PersonId; persist(); return draw(); }
   if (d.foodfilter) { setFoodFilter(d.foodfilter as 'all'); return draw(); }
 
   /* ---- the Shop journey ---- */
-  if (d.step) { state.step = Number(d.step); return draw(); }
-  if (d.golater) { state.tab = 'shop'; state.step = 1; persist(); return draw(); }
-  if (d.week) { state.shopWeek = Number(d.week); state.step = state.plans[Number(d.week)] ? 5 : 0; return draw(); }
+  if (d.step) { state.step = Number(d.step); return draw('top'); }
+  if (d.golater) { state.tab = 'shop'; state.step = 1; persist(); return draw('top'); }
+  if (d.week) { state.shopWeek = Number(d.week); state.step = state.plans[Number(d.week)] ? 5 : 0; return draw('top'); }
   if (d.daytype) {
     const [i, type] = d.daytype.split(':');
     const idx = Number(i);
@@ -273,7 +298,7 @@ function onClick(e: Event): void {
       return;
     }
     state.step = 3;
-    return draw();
+    return draw('top');
   }
   if (d.have) { state.have[d.have] = !state.have[d.have]; persist(); return draw(); }
   if (d.tick) { state.ticked[d.tick] = !state.ticked[d.tick]; persist(); return; }
@@ -357,9 +382,9 @@ export function boot(): void {
   /* Last line of defence: a listener that cannot itself be the thing that
      breaks. If a click handler throws, the next draw still happens. */
   window.addEventListener('error', () => {
-    if (el('main').innerHTML.trim().length < 40) { state.tab = 'today'; draw(); }
+    if (el('main').innerHTML.trim().length < 40) { state.tab = 'today'; draw('top'); }
   });
-  draw();
+  draw('top');
 }
 
 export { offered, MIN_PER_SLOT, emptyPicks, festivalOn, WEEKS };
