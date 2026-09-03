@@ -1,0 +1,178 @@
+/* Components added or reshaped for the rebuild. Same tokens, same language as
+   app.css — this file exists so the new Shop journey is legible in a diff
+   rather than buried in a 300-line append-only sheet. */
+
+.center{text-align:center}
+
+/* --- day-type control. Three states per day: this is the fix for "it never
+       asked me whether it's a vegetarian or non-vegetarian day". --- */
+.dayrow{padding:11px 0;border-bottom:1px dashed var(--rule)}
+.dayrow:last-of-type{border-bottom:0}
+.dayrow.off{opacity:.55}
+.dn{display:block;font-size:13.5px;font-weight:600;margin-bottom:8px}
+.dn .pill{margin-left:6px;vertical-align:1px}
+.dseg{display:flex;gap:4px;background:var(--rule);border-radius:10px;padding:3px}
+.dtype{flex:1;padding:8px 4px;border-radius:8px;font-size:12px;font-weight:600;color:var(--ink-2);line-height:1.2}
+.dtype.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.10)}
+/* --marigold behind white text is 2.69:1. It is a fill for pills and banner
+   grounds, not a background for type — the deep tone is what the hero already
+   uses for a fasting day. */
+.dtype[data-daytype$="vegetarian"].on{background:var(--marigold-deep);color:#fff}
+.dtype[data-daytype$="out"].on{background:var(--ink-2);color:#fff}
+.pill.warn{background:#FBEDEB;color:var(--chilli)}
+
+/* --- opt-in hints and the escape hatch that keeps opting in cheap --- */
+.pickhint{font-size:12px;color:var(--ink-2);margin:0 0 10px;line-height:1.5}
+.linkbtn{display:inline;padding:0;font-size:12px;font-weight:600;color:var(--leaf);text-decoration:underline;text-underline-offset:2px}
+
+/* --- week picker --- */
+.weeks{display:flex;gap:5px;overflow-x:auto;padding:12px 0 4px;scrollbar-width:none}
+.weeks::-webkit-scrollbar{display:none}
+.weeks .wk{flex:0 0 auto;min-width:34px;padding:7px 0;border-radius:9px;background:var(--card);border:1px solid var(--rule);font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.weeks .wk.built{border-color:var(--leaf);color:var(--leaf)}
+.weeks .wk.on{background:var(--leaf);border-color:var(--leaf);color:#fff}
+
+/* --- week review --- */
+.wrow{display:flex;align-items:baseline;gap:9px;padding:10px 0;border-bottom:1px dashed var(--rule)}
+.wrow:last-of-type{border-bottom:0}
+.wrow.off{opacity:.5}
+.wrow.veg{background:linear-gradient(90deg,var(--marigold-soft),transparent 60%);margin:0 -6px;padding-left:6px;padding-right:6px;border-radius:8px}
+.wrow .dn{flex:0 0 84px;margin:0;font-size:12.5px}
+.wmeals{flex:1;min-width:0;font-size:11.5px;color:var(--ink-2);line-height:1.4}
+.wk2,.wrow .wk{flex:0 0 auto;display:flex;gap:8px;font-family:'Fraunces',serif;font-size:13.5px;font-variant-numeric:tabular-nums}
+.banner.ok{background:var(--leaf-soft);border-color:#BEDBD2;color:#0B4038}
+.banner.ok b{color:var(--leaf)}
+.banner.bad{background:#FBEDEB;border-color:#E4A79C;color:#7A2C22}
+.banner.bad b{color:var(--chilli)}
+
+/* --- Today: rings and meal cards --- */
+.rings{display:grid;grid-template-columns:1fr;gap:10px;margin:14px 0 6px}
+@media (min-width:400px){.rings:has(.miniring+.miniring){grid-template-columns:1fr 1fr}}
+.kcal{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-bottom:9px}
+.kcal b{font-family:'Fraunces',serif;font-size:26px;line-height:1;color:var(--leaf)}
+.kcal span{font-size:11.5px;color:var(--ink-2)}
+.ktrack{flex:0 0 100%;height:5px;border-radius:3px;background:var(--rule);overflow:hidden;margin-top:5px}
+.ktrack i{display:block;height:100%;background:var(--leaf);border-radius:3px}
+.mrow{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink-2);padding:3px 0}
+.mrow>span:first-child{flex:0 0 52px}
+.mtrack{flex:1;height:4px;border-radius:3px;background:var(--rule);overflow:hidden}
+.mtrack i{display:block;height:100%;border-radius:3px}
+.mrow b{flex:0 0 auto;font-family:'Fraunces',serif;font-size:12.5px;color:var(--ink)}
+.mrow b em{font-style:normal;color:var(--ink-3);font-weight:400}
+.src.warn{color:var(--chilli)}
+.meal header{display:flex;align-items:center;gap:10px;padding:13px 15px;border-bottom:1px solid var(--rule);background:#FCFBF9}
+.mi{flex:0 0 auto;width:26px;height:26px}
+.mi svg{width:26px;height:26px;display:block}
+.mt{flex:1;min-width:0;font-size:14.5px;font-weight:600;line-height:1.25}
+.mt b{display:block;font-family:'IBM Plex Sans',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3)}
+.ings{padding:4px 15px}
+/* NOT `.ing .pan b{color:var(--leaf)}` — that was written for an earlier markup
+   where the pan figure sat on white. On the green .pcell.pan it rendered the
+   number green on green: invisible, and the same class of defect as the person
+   switcher at 1.95:1 in section 14.3. The cell's own colour:#fff is correct.
+   The browser harness now sweeps every text node for contrast so this cannot
+   come back quietly. */
+.ing .g i{display:block;font-style:normal;font-size:10px;font-weight:400;color:var(--ink-3);letter-spacing:.02em}
+.pickbtn{flex:0 0 auto;padding:6px 11px;border-radius:8px;background:var(--rule);font-size:11.5px;font-weight:600;color:var(--ink-2)}
+.method{margin:0;padding:12px 15px 15px 32px;font-size:12.5px;color:var(--ink-2);line-height:1.55;background:#FCFBF9;border-top:1px solid var(--rule)}
+.method li{margin-bottom:5px}
+.method li:last-child{margin-bottom:0}
+.meal .src{padding:0 15px 13px}
+
+/* --- date strip --- */
+.chip{flex:0 0 auto;padding:7px 11px;border-radius:9px;background:var(--paper);border:1px solid var(--rule);font-size:12px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+.chip.veg{background:var(--marigold-soft);border-color:#EDCE9C;color:#8A5A06}
+.chip.out{opacity:.5;text-decoration:line-through}
+.chip.on{background:var(--leaf);border-color:var(--leaf);color:#fff}
+.chip.on.veg{background:var(--marigold-deep);border-color:var(--marigold-deep);color:#fff}
+
+/* --- Foods --- */
+#q{width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--rule);background:var(--paper);font-size:14px;font-family:inherit;color:var(--ink)}
+.fchips{display:flex;gap:6px;overflow-x:auto;margin-top:10px;scrollbar-width:none}
+.fchips::-webkit-scrollbar{display:none}
+.fchip{flex:0 0 auto;padding:7px 11px;border-radius:9px;background:var(--paper);border:1px solid var(--rule);font-size:12px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+.fchip.on{background:var(--leaf);border-color:var(--leaf);color:#fff}
+.fi{flex:0 0 auto;width:24px;height:24px}
+.fi svg{width:24px;height:24px;display:block}
+.srcline{color:var(--ink-3)!important;font-size:10.5px!important}
+
+/* --- Plan tables --- */
+.ktable{width:100%;border-collapse:collapse;font-size:12.5px}
+.ktable th{text-align:left;font-weight:600;color:var(--ink);padding:8px 6px 8px 0;border-bottom:1px dashed var(--rule);vertical-align:top}
+.ktable th em{display:block;font-style:normal;font-size:10.5px;color:var(--ink-3);font-weight:400;line-height:1.35}
+.ktable td{padding:8px 0 8px 6px;border-bottom:1px dashed var(--rule);color:var(--ink-2);text-align:right;vertical-align:top}
+.ktable td.num{font-family:'Fraunces',serif;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.ktable thead td{color:var(--ink);text-align:right}
+.ktable tbody tr:last-child th,.ktable tbody tr:last-child td{border-bottom:0}
+.rules{margin:0;padding-left:20px;font-size:13px;color:var(--ink-2);line-height:1.6}
+.rules li{margin-bottom:11px}
+.rules li:last-child{margin-bottom:0}
+.rules b{color:var(--ink)}
+
+/* --- Weight --- */
+.whobar2{display:flex;gap:6px;background:var(--rule);border-radius:11px;padding:3px;margin:16px 0 12px}
+.whobar2 button{flex:1;padding:9px 0;border-radius:9px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.whobar2 button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.09)}
+.chart{width:100%;height:190px;display:block}
+.chart .pace{stroke:var(--ink-3);stroke-width:.4;stroke-dasharray:2 2;vector-effect:non-scaling-stroke}
+.chart .line{fill:none;stroke:var(--leaf);stroke-width:1.6;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.chart .dot{fill:var(--leaf)}
+.wadd{display:flex;gap:8px}
+.wadd input{flex:1;min-width:0;padding:11px 13px;border-radius:10px;border:1px solid var(--rule);background:var(--paper);font-size:14px;font-family:inherit;color:var(--ink)}
+.wadd input[aria-invalid="true"]{border-color:var(--chilli)}
+.wadd button{flex:0 0 auto;padding:11px 15px;border-radius:10px;background:var(--leaf);color:#fff;font-size:13px;font-weight:600}
+.wlist{margin-top:12px;border-top:1px dashed var(--rule)}
+.wrow2{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px dashed var(--rule);font-size:12.5px;color:var(--ink-2)}
+.wrow2:last-child{border-bottom:0}
+.wrow2 b{font-family:'Fraunces',serif;color:var(--ink)}
+
+/* --- swap and picker sheets --- */
+.swapopt{display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--rule);background:var(--card);margin-bottom:7px;text-align:left}
+.swapopt.on{border-color:var(--leaf);background:var(--leaf-soft)}
+.so-n{flex:1;min-width:0;font-size:13.5px;font-weight:600;line-height:1.3}
+.so-n i{font-style:normal;font-size:10.5px;font-weight:600;color:var(--leaf);letter-spacing:.03em}
+.so-g{flex:0 0 auto;font-family:'Fraunces',serif;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.so-d{flex:0 0 72px;text-align:right;font-size:11px;line-height:1.35}
+.so-d b{display:block;font-family:'Fraunces',serif;font-size:12.5px}
+.so-d i{font-style:normal;color:var(--ink-3)}
+
+/* --- layout corrections found by the browser harness, not by reading --- */
+
+/* `.strip{display:flex}` out-specifies the hidden attribute's UA default, so
+   `strip.hidden = true` set the attribute and changed nothing: the date chips
+   kept their 65 px of height and their horizontal scroll on every other tab. */
+[hidden]{display:none!important}
+
+/* The Foods row crushed its own name column to zero width at 320 px, because
+   the five-figure macro block had no width limit and .fn had nothing to give.
+   The numbers are a grid now, so the column is a known width and wraps. */
+.frow{align-items:flex-start;flex-wrap:wrap}
+.frow .fn{flex:1 1 60%;min-width:0}
+.frow .fm{flex:0 0 auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px 7px;text-align:center;margin-left:auto}
+.frow .fm b{display:block;font-size:13.5px;line-height:1.15}
+.frow .fm i{display:block;font-style:normal;font-size:9px;font-weight:500;color:var(--ink-3);letter-spacing:.02em}
+.frow .fn .wbadge{display:inline-block;margin:3px 0 0 6px;vertical-align:2px}
+.frow .fn em{overflow-wrap:anywhere}
+
+/* Meal card headers had 14 px nowhere to go at 320 px. Let the right-hand
+   block drop under the title rather than squeezing the dish name. */
+.meal header{flex-wrap:wrap}
+.mt{flex:1 1 55%}
+.meal header .mkcal{margin-left:auto}
+.mkcal i{display:block;font-style:normal;font-size:9.5px;color:var(--ink-3);font-weight:500;margin-top:1px}
+
+/* Long ingredient and source text must wrap, not push the row wider. */
+.ing .n em,.wmeals,.so-n,.gn em{overflow-wrap:anywhere}
+
+/* The hero's two facts ran together as "98 days left1 of 15 weeks" — the same
+   collision section 14.3 logged as "goaldays left". There was no .goal-row rule
+   at all; the old markup happened to space itself. */
+.goal-row{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;opacity:.92;margin-bottom:14px}
+.goal-row b{font-family:'Fraunces',serif;font-size:16px;font-weight:600}
+
+/* The sticky date strip is 65px tall, so a card scrolled to must clear it. */
+.meal,.panel{scroll-margin-top:78px}
+
+/* A chosen dish sits on --leaf-soft, where the tertiary ink drops to 4.02:1.
+   The tint changes the background, so the text on it has to change too. */
+.opt.on .on2 em{color:var(--ink-2)}

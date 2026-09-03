@@ -14,6 +14,10 @@ cd "$(dirname "$0")/.."
 # is a finding, not an obstacle, and goldens.json is not regenerated to make a
 # build pass. That needs a written reason in DECISIONS.md.
 HARNESSES=(datalock macrotest solvertest swaptest vegtest duptest packtest)
+# uat.mjs is last and separate: it needs the BUILT index.html and a real browser,
+# so it is the only harness that can catch a defect the data cannot see. Three
+# already: a stray </style> that made a whole stylesheet inert, the bottom nav
+# covering the last row of every list, and `hidden` losing to `.strip{display:flex}`.
 
 ESB=./node_modules/.bin/esbuild
 total=0
@@ -36,6 +40,26 @@ for t in "${HARNESSES[@]}"; do
     total=$((total + ${n:-0}))
   fi
 done
+
+# --- the interface, in a real browser, against the built file ---
+if [ -f test-harness/uat.mjs ]; then
+  if [ ! -f index.html ]; then
+    printf "%-12s \033[33mno index.html — run npm run build\033[0m\n" "uat"
+  elif [ ! -d node_modules/playwright ]; then
+    printf "%-12s \033[33mplaywright not installed\033[0m\n" "uat"
+  else
+    out=$(node test-harness/uat.mjs 2>&1); code=$?
+    n=$(printf '%s' "$out" | grep -oE '[0-9]+ assertions passed' | grep -oE '^[0-9]+')
+    if [ $code -ne 0 ]; then
+      printf "%-12s \033[31mFAILED\033[0m\n" "uat"
+      printf '%s\n' "$out" | sed 's/^/               /' | head -30
+      failed+=("uat")
+    else
+      printf "%-12s \033[32mok\033[0m  %s assertions\n" "uat" "${n:-?}"
+      total=$((total + ${n:-0}))
+    fi
+  fi
+fi
 
 echo "─────────────────────────────────────"
 if [ ${#failed[@]} -ne 0 ]; then
