@@ -5,7 +5,9 @@
   "extracted": "2026-09-03T18:24:12.081Z",
   "note": "Behaviour fixture for the rebuild. Regenerate only with a written reason in DECISIONS.md.",
   "calendarRebaselined": "2026-09-03 — DST fix, see DECISIONS.md. Dates are now LOCAL, not UTC.",
-  "methodRebaselined": "2026-09-03 — quantities in recipe prose replaced by {foodId} placeholders. See DECISIONS.md."
+  "methodRebaselined": "2026-09-03 — quantities in recipe prose replaced by {foodId} placeholders. See DECISIONS.md.",
+  "chickenRebaselined": "2026-09-03 — chicken frozenok:1 so it joins the main shop, matching handover s12.1. See DECISIONS.md.",
+  "packRebaselined": "2026-09-03 — oil and ghee shown in ml, and shortfalls disclosed. See DECISIONS.md."
  },
  "counts": {
   "foods": 63,
@@ -32,14 +34,15 @@
    "w": "raw",
    "cv": 0.75,
    "fresh": 1,
-   "cost": 6.5,
-   "psrc": "Tesco 1.6 kg pack £10.65, £9.50 Clubcard — £5.94–6.66/kg. Smaller packs run £7.85–8.20/kg",
+   "frozenok": 1,
    "packs": [
     1600,
     1000,
     650,
     320
    ],
+   "cost": 6.5,
+   "psrc": "Tesco 1.6 kg pack £10.65, £9.50 Clubcard — £5.94–6.66/kg. Smaller packs run £7.85–8.20/kg",
    "src": "USDA FDC 2646170"
   },
   "cod": {
@@ -149,12 +152,12 @@
    "v": 1,
    "i": "paneer",
    "shop": "indian",
-   "cost": 8.85,
-   "psrc": "Sainsbury's Paneer 200 g, £1.77 (Trolley). That is standard paneer — low-fat may differ",
    "packs": [
     450,
     200
    ],
+   "cost": 8.85,
+   "psrc": "Sainsbury's Paneer 200 g, £1.77 (Trolley). That is standard paneer — low-fat may differ",
    "src": "Brand label — VERIFY yours"
   },
   "paneer": {
@@ -180,13 +183,13 @@
    "fb": 0,
    "v": 1,
    "i": "yoghurt",
-   "cost": 6.45,
-   "psrc": "Fage Total 0% 950 g, £5.90–£6.35 across Morrisons, Sainsbury's and Tesco (Trolley)",
    "packs": [
     950,
     450,
     150
    ],
+   "cost": 6.45,
+   "psrc": "Fage Total 0% 950 g, £5.90–£6.35 across Morrisons, Sainsbury's and Tesco (Trolley)",
    "src": "Fage UK label. Best protein density of 10 yoghurts tracked: 20 g protein per 100 kcal"
   },
   "sains": {
@@ -199,14 +202,14 @@
    "fb": 0,
    "v": 1,
    "i": "yoghurt",
-   "srcd": 1,
-   "cost": 3.67,
-   "psrc": "Sainsbury's Fat Free High Protein 450 g, £1.65 — 11.5 g protein per 100 g",
    "packs": [
     450,
     150
    ],
-   "src": "Sainsbury's label via UK review round-up"
+   "cost": 3.67,
+   "psrc": "Sainsbury's Fat Free High Protein 450 g, £1.65 — 11.5 g protein per 100 g",
+   "src": "Sainsbury's label via UK review round-up",
+   "srcd": 1
   },
   "curd": {
    "n": "Curd / dahi, plain",
@@ -435,14 +438,14 @@
    "w": "dry",
    "cv": 2.8,
    "shop": "indian",
-   "cost": 1.95,
-   "psrc": "Laila Basmati 5 kg, £8.00–£11.50 across Co-op, Morrisons and Asda (Trolley)",
    "packs": [
     10000,
     5000,
     2000,
     1000
    ],
+   "cost": 1.95,
+   "psrc": "Laila Basmati 5 kg, £8.00–£11.50 across Co-op, Morrisons and Asda (Trolley)",
    "src": "USDA FDC"
   },
   "atta": {
@@ -458,13 +461,13 @@
    "w": "dry",
    "cv": 0,
    "shop": "indian",
-   "cost": 0.95,
-   "psrc": "Tesco wholemeal chapatti flour 10 kg £7.50; Elephant Atta 10 kg £10.50–£12.50 (Trolley)",
    "packs": [
     10000,
     5000,
     1500
    ],
+   "cost": 0.95,
+   "psrc": "Tesco wholemeal chapatti flour 10 kg £7.50; Elephant Atta 10 kg £10.50–£12.50 (Trolley)",
    "src": "USDA FDC"
   },
   "oats": {
@@ -479,13 +482,13 @@
    "i": "oats",
    "w": "dry",
    "cv": 3,
-   "cost": 1.2,
-   "psrc": "Porridge oats 1 kg: Aldi £0.85, Waitrose £1.25, Sainsbury's £1.35 (Trolley)",
    "packs": [
     1500,
     1000,
     500
    ],
+   "cost": 1.2,
+   "psrc": "Porridge oats 1 kg: Aldi £0.85, Waitrose £1.25, Sainsbury's £1.35 (Trolley)",
    "src": "USDA FDC"
   },
   "quinoa": {
@@ -6241,7 +6244,8 @@
    },
    "5000": {
     "buy": 4850,
-    "note": "1 × 650 g + 1 × 1 kg + 2 × 1.6 kg"
+    "note": "1 × 650 g + 1 × 1 kg + 2 × 1.6 kg",
+    "short": 150
    }
   },
   "cod": {
@@ -6470,7 +6474,8 @@
    },
    "1850": {
     "buy": 1800,
-    "note": "4 × 450 g"
+    "note": "4 × 450 g",
+    "short": 50
    },
    "2600": {
     "buy": 2700,
@@ -6546,7 +6551,8 @@
    },
    "1850": {
     "buy": 1800,
-    "note": "4 × 450 g"
+    "note": "4 × 450 g",
+    "short": 50
    },
    "2600": {
     "buy": 2700,
@@ -6560,47 +6566,38 @@
   "curd": {
    "50": {
     "buy": 400,
-    "packs": 1,
     "note": "1 × 400 g"
    },
    "120": {
     "buy": 400,
-    "packs": 1,
     "note": "1 × 400 g"
    },
    "260": {
     "buy": 400,
-    "packs": 1,
     "note": "1 × 400 g"
    },
    "500": {
     "buy": 800,
-    "packs": 2,
     "note": "2 × 400 g"
    },
    "900": {
     "buy": 1200,
-    "packs": 3,
     "note": "3 × 400 g"
    },
    "1290": {
     "buy": 1600,
-    "packs": 4,
     "note": "4 × 400 g"
    },
    "1850": {
     "buy": 2000,
-    "packs": 5,
     "note": "5 × 400 g"
    },
    "2600": {
     "buy": 2800,
-    "packs": 7,
     "note": "7 × 400 g"
    },
    "5000": {
     "buy": 5200,
-    "packs": 13,
     "note": "13 × 400 g"
    }
   },
@@ -7125,7 +7122,8 @@
    },
    "1850": {
     "buy": 1800,
-    "note": "1 × 300 g + 3 × 500 g"
+    "note": "1 × 300 g + 3 × 500 g",
+    "short": 50
    },
    "2600": {
     "buy": 3000,
@@ -7159,7 +7157,8 @@
    },
    "1290": {
     "buy": 1260,
-    "note": "1 × 260 g + 2 × 500 g"
+    "note": "1 × 260 g + 2 × 500 g",
+    "short": 30
    },
    "1850": {
     "buy": 2000,
@@ -7653,7 +7652,8 @@
    },
    "1850": {
     "buy": 1800,
-    "note": "2 × 900 g"
+    "note": "2 × 900 g",
+    "short": 50
    },
    "2600": {
     "buy": 2700,
@@ -7837,39 +7837,39 @@
   "oil": {
    "50": {
     "buy": 500,
-    "note": "1 × 500 g"
+    "note": "1 × 500 ml"
    },
    "120": {
     "buy": 500,
-    "note": "1 × 500 g"
+    "note": "1 × 500 ml"
    },
    "260": {
     "buy": 500,
-    "note": "1 × 500 g"
+    "note": "1 × 500 ml"
    },
    "500": {
     "buy": 500,
-    "note": "1 × 500 g"
+    "note": "1 × 500 ml"
    },
    "900": {
     "buy": 1000,
-    "note": "1 × 1 kg"
+    "note": "1 × 1 litre"
    },
    "1290": {
     "buy": 1500,
-    "note": "1 × 500 g + 1 × 1 kg"
+    "note": "1 × 500 ml + 1 × 1 litre"
    },
    "1850": {
     "buy": 2000,
-    "note": "2 × 1 kg"
+    "note": "2 × 1 litre"
    },
    "2600": {
     "buy": 3000,
-    "note": "3 × 1 kg"
+    "note": "3 × 1 litre"
    },
    "5000": {
     "buy": 5000,
-    "note": "5 × 1 kg"
+    "note": "5 × 1 litre"
    }
   }
  },

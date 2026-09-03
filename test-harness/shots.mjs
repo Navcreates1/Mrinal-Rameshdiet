@@ -1,15 +1,11 @@
 /* Screenshots of the screens that matter, so a human can look rather than trust. */
 import { chromium } from 'playwright';
-import { createServer } from 'node:http';
-import { readFileSync, existsSync } from 'node:fs'; import { extname } from 'node:path';
+import { serve } from './serve.mjs';
 const OUT = process.argv[2] || '/tmp/shots';
-const T={'.html':'text/html','.png':'image/png','.webmanifest':'application/manifest+json'};
-const s=createServer((q,r)=>{const f=new URL(q.url,'http://x').pathname==='/'?'index.html':new URL(q.url,'http://x').pathname.slice(1);
-  if(!existsSync(f)){r.writeHead(404);return r.end();} r.writeHead(200,{'content-type':T[extname(f)]??'text/plain'}); r.end(readFileSync(f));});
-await new Promise(r=>s.listen(8796,r));
+const { url: BASE, close: closeServer } = await serve(8796);
 const b=await chromium.launch(); const ctx=await b.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
 const p=await ctx.newPage(); p.on('dialog',d=>d.accept());
-await p.goto('http://localhost:8796/',{waitUntil:'networkidle'});
+await p.goto(BASE,{waitUntil:'commit'}); await p.waitForSelector('#nav button');
 const shot=async(name,full=true)=>{await p.waitForTimeout(350);await p.screenshot({path:`${OUT}/${name}.png`,fullPage:full});console.log(name);};
 
 await shot('01-today');
@@ -30,4 +26,4 @@ await p.click('#nav button[data-tab="weight"]'); await shot('12-weight');
 await p.click('#nav button[data-tab="guide"]'); await shot('13-guide');
 await p.click('#nav button[data-tab="today"]'); await p.waitForTimeout(200);
 await p.click('.swapbtn'); await shot('14-swap',false);
-await b.close(); s.close();
+await b.close(); closeServer();

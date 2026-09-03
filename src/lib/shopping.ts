@@ -52,7 +52,15 @@ export function bestCombo(need: number, sizes: readonly number[]): Combo {
   return { total: (best as { total: number }).total, counts };
 }
 
-const size = (n: number): string => (n >= 1000 ? `${n / 1000} kg` : `${n} g`);
+/* Oil is bought and measured in millilitres. Showing "280 g" on the list beside
+   "7.5 ml" on the plate made two different units look like the same number —
+   they are not: oil is about 0.92 g/ml. */
+const size = (n: number, ml = false): string =>
+  ml ? (n >= 1000 ? `${n / 1000} litre${n === 1000 ? '' : 's'}` : `${n} ml`)
+     : (n >= 1000 ? `${n / 1000} kg` : `${n} g`);
+
+/** How much of this food, in its own unit. */
+export const amountOf = (fid: string, n: number): string => size(n, Boolean(F[fid]?.ml));
 
 export interface PackPlan {
   /** What ends up in the trolley, in grams. */
@@ -61,6 +69,12 @@ export interface PackPlan {
   count?: number;
   /** Plain words: "2 boxes of 12 + 1 box of 6", or "1 x 5 kg". */
   note: string;
+  /** Grams short of the need, when the tolerance was used. Shown on the line.
+      2.65 kg of chicken becomes "1 x 1 kg + 1 x 1.6 kg", which is 50 g under —
+      because the alternative is a third pack to cover fifty grams. That is the
+      right trade, but it was silent, and a silent shortfall is indistinguishable
+      from a bug. */
+  short?: number;
 }
 
 /** Round a weekly need up to what is actually on the shelf. */
@@ -84,13 +98,14 @@ export function packUp(fid: string, g: number): PackPlan {
 
   if (o.packs) {
     const c = bestCombo(g, o.packs);
-    const how = Object.entries(c.counts).map(([sz, k]) => `${k} × ${size(Number(sz))}`).join(' + ');
-    return { buy: c.total, note: how };
+    const how = Object.entries(c.counts).map(([sz, k]) => `${k} × ${size(Number(sz), Boolean(o.ml))}`).join(' + ');
+    const under = Math.round(g - c.total);
+    return under > 0 ? { buy: c.total, note: how, short: under } : { buy: c.total, note: how };
   }
 
   if (o.pack) {
     const n = Math.max(1, Math.ceil(g / o.pack));
-    return { buy: n * o.pack, note: `${n} × ${size(o.pack)}` };
+    return { buy: n * o.pack, note: `${n} × ${size(o.pack, Boolean(o.ml))}` };
   }
 
   return { buy: Math.ceil(g / 50) * 50, note: '' };

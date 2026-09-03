@@ -9,20 +9,10 @@
  * with a way out. Neither is ever a blank page.
  */
 import { chromium } from 'playwright';
-import { createServer } from 'node:http';
-import { readFileSync, existsSync } from 'node:fs';
-import { extname } from 'node:path';
+import { serve } from './serve.mjs';
 
 const KEY = 'mrinal-ramesh-plan:v2';
-const T = { '.html': 'text/html', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
-const server = createServer((q, r) => {
-  const path = new URL(q.url, 'http://x').pathname;
-  const f = path === '/' ? 'index.html' : path.slice(1);
-  if (!existsSync(f)) { r.writeHead(404); return r.end(); }
-  r.writeHead(200, { 'content-type': T[extname(f)] ?? 'text/plain' });
-  r.end(readFileSync(f));
-});
-await new Promise(r => server.listen(8802, r));
+const { url: URLBASE, close: closeServer } = await serve(8802);
 
 let pass = 0; const fail = [];
 const ok = (c, m) => { if (c) pass++; else fail.push(m); };
@@ -32,7 +22,8 @@ const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 const errs = [];
 page.on('pageerror', e => errs.push(String(e)));
 page.on('dialog', d => d.accept());
-await page.goto('http://localhost:8802/', { waitUntil: 'networkidle' });
+await page.goto(URLBASE, { waitUntil: 'commit' });
+await page.waitForSelector('#nav button', { timeout: 20000 });
 
 const POISONS = [
   ['a partial object',            '{"plans":{"0":{}}}'],
@@ -56,7 +47,8 @@ const POISONS = [
 for (const [name, payload] of POISONS) {
   errs.length = 0;
   await page.evaluate(([k, v]) => localStorage.setItem(k, v), [KEY, payload]);
-  await page.reload({ waitUntil: 'networkidle' }).catch(() => {});
+  await page.reload({ waitUntil: 'commit' }).catch(() => {});
+  await page.waitForSelector('#nav button', { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(220);
   const len = await page.locator('#main').innerHTML().then(h => h.length).catch(() => 0);
   const recovery = await page.locator('[data-reset]').count().catch(() => 0);
@@ -67,13 +59,15 @@ for (const [name, payload] of POISONS) {
 
 /* Good state still restores. Validation must not throw the baby out. */
 await page.evaluate(k => localStorage.removeItem(k), KEY);
-await page.reload({ waitUntil: 'networkidle' });
+await page.reload({ waitUntil: 'commit' });
+await page.waitForSelector('#nav button', { timeout: 15000 });
 await page.click('#nav button[data-tab="weight"]');
 await page.waitForSelector('#wkg');
 await page.fill('#wkg', '64.3');
 await page.click('#wAdd');
 await page.waitForTimeout(250);
-await page.reload({ waitUntil: 'networkidle' });
+await page.reload({ waitUntil: 'commit' });
+await page.waitForSelector('#nav button', { timeout: 15000 });
 await page.click('#nav button[data-tab="weight"]');
 await page.waitForTimeout(250);
 ok((await page.locator('#main').innerText()).includes('64.3'), 'a real weigh-in survives a reload');
@@ -91,12 +85,13 @@ ok(await page.locator('#main').innerHTML().then(h => h.length) > 400,
 
 /* The recovery button really does clear the device. */
 await page.evaluate(([k, v]) => localStorage.setItem(k, v), [KEY, '{"prices":{"chicken":4.5}}']);
-await page.reload({ waitUntil: 'networkidle' });
+await page.reload({ waitUntil: 'commit' });
+await page.waitForSelector('#nav button', { timeout: 15000 });
 const stored = await page.evaluate(k => localStorage.getItem(k), KEY);
 ok(stored && stored.includes('chicken'), 'a price is stored before the reset');
 
 await browser.close();
-server.close();
+closeServer();
 if (fail.length) {
   console.error(`\nstatetest: ${fail.length} FAILED, ${pass} passed\n`);
   fail.forEach((f, i) => console.error(`  ${i + 1}. ${f}`));

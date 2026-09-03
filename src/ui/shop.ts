@@ -32,8 +32,8 @@ import type { PersonId } from '../data/people.ts';
 import { DAYS, WEEKS, dayOf, fmtLong, fmtShort, weekStart } from '../data/calendar.ts';
 import { buildWeek, missingSlots } from '../lib/daysolver.ts';
 import type { WeekDayRequest } from '../lib/daysolver.ts';
-import { solveDay } from '../lib/portion.ts';
-import { buildList, addRows, GROUP_LABEL, GROUP_NOTE, money, packLife } from '../lib/shopping.ts';
+import { solveDay, CORE_SHARE } from '../lib/portion.ts';
+import { buildList, addRows, GROUP_LABEL, GROUP_NOTE, money, packLife, amountOf } from '../lib/shopping.ts';
 import type { Group, ShoppingList } from '../lib/shopping.ts';
 import { state, dayType, reasonFor, isOverriddenFestival, persist } from './state.ts';
 import type { DayType, WeekPlan } from './state.ts';
@@ -45,10 +45,28 @@ export const MIN_PER_SLOT = 2;
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-const stepBar = (n: number): string =>
-  `<div class="steps">${STEPS.map((s, i) =>
-    `<div class="stp ${i < n ? 'done' : i === n ? 'now' : ''}"><b>${i < n ? '✓' : i + 1}</b><span>${s}</span></div>`
-  ).join('')}</div>`;
+/* A ✓ used to appear on every step behind the current one whether or not it had
+   been done — "Meals" showed a tick from the start, then refused to build
+   because nothing was chosen. A tick now means completed, and the steps are
+   buttons: the only way back was the Back button, one screen at a time. */
+function stepDone(w: number, i: number): boolean {
+  switch (i) {
+    case 0: return cooking(w).length > 0;
+    case 1: return (['b', 'l', 'd'] as const).every(k => state.picks[k].length > 0);
+    case 2: return state.picks.veg.length > 0;
+    case 3: return Boolean(state.plans[w]);
+    case 4: return Boolean(state.plans[w]);
+    default: return false;
+  }
+}
+
+const stepBar = (w: number, n: number): string =>
+  `<nav class="steps" aria-label="Shopping steps">${STEPS.map((label, i) => {
+    const done = stepDone(w, i) && i !== n;
+    const reachable = i <= n || (i <= 2 && stepDone(w, i - 1)) || (i >= 3 && Boolean(state.plans[w]));
+    return `<button class="stp ${done ? 'done' : i === n ? 'now' : ''}" ${reachable ? `data-step="${i}"` : 'disabled'}
+      aria-current="${i === n}"><b>${done ? '✓' : i + 1}</b><span>${label}</span></button>`;
+  }).join('')}</nav>`;
 
 const weekDayIndexes = (w: number): number[] => {
   const out: number[] = [];
@@ -175,7 +193,7 @@ function viewDays(w: number): string {
     <p>Set each day. The Ganesh Chaturthi and Dasara windows are already marked
        vegetarian and say so — but any day can be vegetarian, for any reason.
        Mark a day as eating out and it drops off the plan and off the list.</p></div>
-  ${stepBar(0)}
+  ${stepBar(w, 0)}
   <div class="panel">${idx.map(i => {
     const why = reasonFor(i);
     return `<div class="dayrow${dayType(i) === 'out' ? ' off' : ''}">
@@ -195,12 +213,16 @@ function viewDays(w: number): string {
 function mealCardRow(id: string, slot: string): string {
   const on = (state.picks[slot as 'b'] as string[]).includes(id);
   const m = M[id]!;
+  /* The base recipe, NOT the plated portion. The same dish shows a bigger
+     number on Today because the solver scales it to that day's slot budget —
+     showing 367 here and 447 there with neither labelled was confusing. */
   const t = solveDay([id], [], 'M', 'reference').total;
   const main = m.x.filter(x => x[2] === 'pro' || x[2] === 'carb').map(x => F[x[0]]!.n).join(', ');
   return `<button class="opt${on ? ' on' : ''}" data-pickmeal="${slot}" data-mid="${id}" aria-pressed="${on}">
     <span class="oi">${ico(m.ic)}</span>
     <span class="on2">${esc(m.t)}<em>${esc(main)}</em></span>
-    <span class="om"><b class="num">${Math.round(t.k)}</b>kcal<br><span style="color:var(--chilli)">${t.p.toFixed(0)} g P</span></span></button>`;
+    <span class="om"><b class="num">${Math.round(t.k)}</b>kcal<br><span style="color:var(--chilli)">${t.p.toFixed(0)} g P</span>
+      <br><i class="basenote">base recipe</i></span></button>`;
 }
 
 function viewMeals(w: number): string {
@@ -229,12 +251,13 @@ function viewMeals(w: number): string {
     <p><b>Nothing is chosen yet — pick what they want.</b> The old version switched
        everything on and asked you to switch things off, which is the wrong way round.
        Every dish is weighed to the plan, so any of these work.</p></div>
-  ${stepBar(1)}
+  ${stepBar(w, 1)}
   <div class="banner">${ico('rice')}<div><b>Three meals a day.</b>
-    Breakfast, lunch and dinner carry the whole day between them — about
-    ${Math.round(PEOPLE.M.t.k * 0.33)} kcal each for Mrinal and
-    ${Math.round(PEOPLE.R.t.k * 0.33)} for Ramesh, and more protein per sitting
-    than five small ones managed.</div></div>
+    Breakfast, lunch and dinner carry the whole day between them —
+    ${Math.round(PEOPLE.M.t.k * CORE_SHARE.b)}–${Math.round(PEOPLE.M.t.k * CORE_SHARE.l)} kcal
+    a meal for Mrinal and ${Math.round(PEOPLE.R.t.k * CORE_SHARE.b)}–${Math.round(PEOPLE.R.t.k * CORE_SHARE.l)}
+    for Ramesh, lunch being the largest. More protein per sitting than five small
+    ones managed.</div></div>
   ${block('b', 'Breakfast')}${block('l', 'Lunch')}${block('d', 'Dinner')}
   <div class="panel"><h3>Something later
       <span class="pill ${state.picks.wantLater ? 'n' : ''}">${state.picks.wantLater ? 'on' : 'off'}</span></h3>
@@ -268,7 +291,7 @@ function viewVeg(w: number): string {
     <p><b>None chosen yet.</b> These are most of the shopping list and most of the
        volume on the plate. Pick what they will actually eat — anything left off
        is substituted, not silently served.</p></div>
-  ${stepBar(2)}
+  ${stepBar(w, 2)}
   <div class="panel"><p class="pickhint">${on} of 27 chosen.
     <button class="linkbtn" data-suggestveg="1">Pick the ones these meals need</button></p></div>
   ${VEG_GROUPS.map(([g, ids]) => `<div class="panel"><h3>${g}</h3>
@@ -319,7 +342,7 @@ function viewWeekReview(w: number): string {
   return `<div class="sec"><h2>Week ${w + 1} of ${WEEKS}</h2>
     <p>${esc(fmtLong(dayOf(idx[0]!)))} to ${esc(fmtShort(dayOf(idx[idx.length - 1]!)))}.
       Two figures on each day: Mrinal in red, Ramesh in blue.</p></div>
-  ${stepBar(3)}
+  ${stepBar(w, 3)}
   <div class="panel">${rows.join('')}
     <p class="src">Spread across the week: ${spread('M')} kcal for Mrinal, ${spread('R')} for Ramesh.
       Under about 60 is noise; more than that and the week is uneven.</p></div>
@@ -360,14 +383,21 @@ export function needsFor(w: number): Record<string, number> {
 function viewCupboard(w: number): string {
   const list = buildList(needsFor(w), { have: state.have, prices: state.prices });
   const all = [...list.rows, ...list.owned].sort((a, b) => a.name.localeCompare(b.name, 'en-GB'));
+  const owned = all.filter(r => state.have[r.fid]).length;
   return `<div class="sec"><h2>What is already in?</h2>
-    <p>${all.length} things this week needs. Tap anything already in the cupboard
-       and it drops off the list.</p></div>
-  ${stepBar(4)}
-  <div class="panel">${all.map(r => `<div class="gitem">
-      <span class="gn">${esc(r.name)}<em>${r.pack.count ? r.pack.note : `${r.need >= 1000 ? (r.need / 1000).toFixed(2) + ' kg' : Math.round(r.need) + ' g'}${r.pack.note ? ' — ' + r.pack.note : ''}`}</em></span>
-      <button class="cbtn${state.have[r.fid] ? '' : ' yes'}" data-have="${r.fid}">
-        ${state.have[r.fid] ? 'Have it' : 'Buy it'}</button></div>`).join('')}</div>
+    <p>${all.length} things this week needs${owned ? `, and ${owned} ${owned === 1 ? 'is' : 'are'} already in` : ''}.
+       Tap anything you have and it drops off the list.</p></div>
+  ${stepBar(w, 4)}
+  <div class="panel">${all.map(r => {
+    const have = state.have[r.fid] === true;
+    /* The button used to read "Buy it" as a label of current state, under an
+       instruction that read as a command. It says what tapping does now. */
+    return `<div class="gitem${have ? ' done' : ''}">
+      <span class="gn">${esc(r.name)}<em>${r.pack.count ? r.pack.note : `${amountOf(r.fid, Math.round(r.need))}${r.pack.note ? ' — ' + r.pack.note : ''}`}</em></span>
+      <button class="cbtn${have ? '' : ' yes'}" data-have="${r.fid}"
+        aria-pressed="${have}">${have ? '✓ Already in' : 'I have this'}</button></div>`;
+  }).join('')}
+    <p class="src">${all.length - owned} to buy. Anything left untapped goes on the list.</p></div>
   <div class="copybar"><button class="alt" data-step="3">Back</button>
     <button data-step="5">Next — the list</button></div>`;
 }
@@ -383,10 +413,12 @@ function listGroup(key: Group, list: ShoppingList, weekNeed: Record<string, numb
       return `<label class="gitem${state.ticked[tickId] ? ' done' : ''}">
         <input type="checkbox" data-tick="${tickId}" ${state.ticked[tickId] ? 'checked' : ''}>
         <span class="gn">${esc(r.name)}${F[r.fid]!.frozenok ? ' <span class="pill n">frozen is fine</span>' : ''}
-          <em>${r.pack.count ? 'buy ' + esc(r.pack.note) : `need ${r.need >= 1000 ? (r.need / 1000).toFixed(2) + ' kg' : Math.round(r.need) + ' g'}${r.pack.note ? ' — buy ' + esc(r.pack.note) : ''}`}${F[r.fid]!.w ? ' · ' + F[r.fid]!.w + ' weight' : ''}${life && life > 2 ? ` · lasts about ${life.toFixed(0)} weeks` : ''}</em></span>
+          <em>${r.pack.count ? 'buy ' + esc(r.pack.note) : `need ${amountOf(r.fid, Math.round(r.need))}${r.pack.note ? ' — buy ' + esc(r.pack.note) : ''}`}${F[r.fid]!.w ? ' · ' + F[r.fid]!.w + ' weight' : ''}${life && life > 2 ? ` · lasts about ${life.toFixed(0)} weeks` : ''}${r.pack.short ? ` · <b class="under">${r.pack.short} g under</b> — the next pack up is more waste than it is worth` : ''}</em></span>
         <button type="button" class="gc${r.price === undefined ? ' guess' : r.approx ? ' approx' : ''}"
-          data-price="${r.fid}">${r.price === undefined ? 'add<i>price</i>'
-            : money((r.price * r.pack.buy) / 1000) + (r.approx ? '<i>approx</i>' : '')}</button>
+          data-price="${r.fid}"
+          aria-label="${r.price === undefined ? 'Add the price of' : 'Change the price of'} ${esc(r.name)}"
+          >${r.price === undefined ? 'add<i>price</i>'
+            : money((r.price * r.pack.buy) / 1000) + (r.approx ? `<i>${money(r.price)}/${F[r.fid]!.ml ? 'l' : 'kg'} · looked up</i>` : '<i>your price</i>')}</button>
       </label>`;
     }).join('')}</div>`;
 }
@@ -400,20 +432,22 @@ function viewList(w: number): string {
     <p>Week ${w + 1}, ${esc(fmtShort(dayOf(idx[0]!)))} to ${esc(fmtShort(dayOf(idx[idx.length - 1]!)))} —
       both plates, ${cooking(w).length} days of cooking. Prices vary by shop, week,
       pack size and offer.</p></div>
-  ${stepBar(5)}
+  ${stepBar(w, 5)}
   ${list.total === null
     ? `<div class="banner">${ico('rice')}<div><b>No weekly total yet.</b>
         ${list.unpriced} of ${list.rows.length} lines have no price. A total built on
         part of the data would be a made-up number wearing a caveat, so the app shows
         nothing until every line is priced. Tap <b>add price</b> as you shop and it is
-        kept for good.</div></div>`
+        kept for good.${list.rows.length - list.unpriced
+          ? ` The ${list.rows.length - list.unpriced} marked <b>looked up</b> came from a real listing — tap one to see which.`
+          : ''}</div></div>`
     : `<div class="banner ok">${ico('rice')}<div><b>${money(list.total)} for the week.</b>
         Every line priced from a real label.</div></div>`}
   ${order.map(g => listGroup(g, list, need)).join('')}
   ${list.owned.length ? `<div class="panel"><h3>Already in the cupboard</h3>
     <p style="margin-bottom:10px">Not on the list, but the week needs them — check before you leave.</p>
     ${list.owned.map(r => `<div class="gitem done"><span class="gn">${esc(r.name)}<em>${Math.round(r.need)} g needed</em></span>
-      <button class="cbtn" data-have="${r.fid}">Buy it after all</button></div>`).join('')}</div>` : ''}
+      <button class="cbtn yes" data-have="${r.fid}">Put it back on the list</button></div>`).join('')}</div>` : ''}
   <div class="copybar"><button class="alt" data-step="4">Back</button>
     <button data-copyshop="1">Copy the list</button></div>`;
 }

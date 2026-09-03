@@ -172,8 +172,11 @@ export function viewToday(): string {
     ${dayType(day) === 'out' ? `<div class="banner">${ico('rice')}<div><b>Marked as eating out.</b>
       This day is off the plan and off the shopping list. The meals below are what it would have been.</div></div>` : ''}
     <div class="rings">${show === 'both' || show === 'M' ? ring('M', solM) : ''}${show === 'both' || show === 'R' ? ring('R', solR) : ''}</div>
-    ${solM.meals.length === 3 ? `<p class="src center">Three meals. ${state.picks.wantLater
-      ? '' : `Add something later on the Shop tab — it comes out of the day's ${Math.round(LATER_SHARE * 100)}%, not on top.`}</p>` : ''}
+    ${solM.meals.length === 3 && !state.picks.wantLater
+      ? `<p class="src center">Three meals, carrying the whole day between them.
+          <button class="linkbtn" data-golater="1">Want something later?</button>
+          It comes out of the day's budget — about ${Math.round(PEOPLE.M.t.k * LATER_SHARE)} kcal —
+          not on top of it.</p>` : ''}
     ${cards}
     <div class="copybar">
       <button data-copyday="${show}">Copy ${show === 'both' ? 'both days' : PEOPLE[show as PersonId].name + "'s day"} for Cronometer</button>

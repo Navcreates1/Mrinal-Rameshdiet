@@ -11,6 +11,7 @@
  */
 import { build } from 'esbuild';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 
 const check = process.argv.includes('--check');
 
@@ -37,6 +38,11 @@ const html = readFileSync('src/index.template.html', 'utf8')
   .replace('/*CSS*/', () => css)
   .replace('/*JS*/', () => js);
 
+/* The service-worker cache name carries a hash of the built page, so a new
+   build invalidates the old cache and nothing else does. */
+const stamp = createHash('sha256').update(html).digest('hex').slice(0, 12);
+const sw = readFileSync('src/sw.template.js', 'utf8').replace('__BUILD__', stamp);
+
 const manifest = {
   name: 'Mrinal and Ramesh — Consistency is key',
   short_name: 'The Plan',
@@ -49,16 +55,20 @@ const manifest = {
 };
 
 if (check) {
-  const was = existsSync('index.html') ? readFileSync('index.html', 'utf8') : '';
-  if (was !== html) {
-    console.error('index.html is out of date — run `npm run build` and commit the result.');
-    process.exit(1);
+  for (const [file, want] of [['index.html', html], ['sw.js', sw],
+                              ['manifest.webmanifest', JSON.stringify(manifest, null, 2) + '\n']]) {
+    const was = existsSync(file) ? readFileSync(file, 'utf8') : '';
+    if (was !== want) {
+      console.error(`${file} is out of date — run \`npm run build\` and commit the result.`);
+      process.exit(1);
+    }
   }
-  console.log('index.html is current');
+  console.log('index.html, sw.js and manifest.webmanifest are current');
   process.exit(0);
 }
 
 writeFileSync('index.html', html);
 writeFileSync('manifest.webmanifest', JSON.stringify(manifest, null, 2) + '\n');
+writeFileSync('sw.js', sw);
 const kb = (n) => (n / 1024).toFixed(0) + ' KB';
-console.log(`index.html  ${kb(html.length)}  (css ${kb(css.length)}, js ${kb(js.length)})`);
+console.log(`index.html  ${kb(html.length)}  (css ${kb(css.length)}, js ${kb(js.length)})  sw ${stamp}`);

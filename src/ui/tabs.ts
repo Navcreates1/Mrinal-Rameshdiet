@@ -66,6 +66,38 @@ export function viewPlan(): string {
     <p class="src">Every figure above is computed from the profiles, not typed in.
       Change a target and this table changes with it.</p></div>
 
+  <div class="panel"><h3>Why the calories do not equal 4/4/9</h3>
+    <p>Multiply the protein and carbohydrate by 4 and the fat by 9 and you get
+      roughly 60–80 kcal more than the figure on the ring. That is not an error
+      in either number.</p>
+    <p>Fibre is counted inside the carbohydrate total, but the body gets about
+      <b>2 kcal per gram</b> from it rather than 4. At ${PEOPLE.M.t.fb}–${PEOPLE.R.t.fb} g
+      a day that is most of the gap; counting fibre at 2 closes it to within about
+      15 kcal. The rest is that the calorie values in the food database are
+      <b>measured</b>, from USDA and IFCT, not computed from the macros.
+      Cronometer does the same thing, so the two will agree.</p></div>
+
+  <div class="panel"><h3>Where the activity factors come from</h3>
+    <p><b>${PEOPLE.R.name}, ×${PEOPLE.R.activity}.</b> A standard Mifflin multiplier —
+      lightly active, a desk job with two sessions a week.</p>
+    <p><b>${PEOPLE.M.name}, ×${PEOPLE.M.activity}.</b> Not a standard multiplier, and it
+      should not look like one. The Mifflin ladder steps 1.2 · 1.375 · 1.55 · 1.725 ·
+      1.9, and none of those fits someone walking 8,000 steps a day <i>and</i>
+      training three times a week: 1.375 ignores the steps, 1.55 assumes both are
+      heavier than they are. ${PEOPLE.M.activity} sits between them, and it is a
+      judgement rather than a lookup. If it is wrong, the weigh-ins will say so —
+      that is what the Weight tab is for.</p></div>
+
+  <div class="panel"><h3>Where the plan is weakest</h3>
+    <p><b>${PEOPLE.R.name}'s fat runs about 10% under target</b> — near
+      ${Math.round(PEOPLE.R.t.f * 0.9)} g against ${PEOPLE.R.t.f} g, though always above the
+      ${BANDS.R.fMin} g floor. His portions scale from ${PEOPLE.M.name}'s, and the oil in
+      each dish can only grow so far before it stops being a measured tempering.
+      Closing the gap means moving about 50 kcal out of his carbohydrate and into
+      oil, which is not obviously better. Said here rather than hidden.</p>
+    <p><b>Both metabolic rates are estimates.</b> Nothing else on this page is worth
+      much until three real weigh-ins replace them.</p></div>
+
   <div class="panel"><h3>The two assumptions worth doubting</h3>
     <p><b>${PEOPLE.M.name}.</b> ${esc(PEOPLE.M.activityNote)}</p>
     <p><b>${PEOPLE.R.name} — the least reliable figure in the plan.</b> ${esc(PEOPLE.R.activityNote)}</p>

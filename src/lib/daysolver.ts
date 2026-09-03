@@ -49,6 +49,19 @@ export interface DayResult {
 const RECENCY = [0, 260, 170, 110, 70, 45, 30];
 const REPEAT_FLOOR = 20;
 const PERSON_WEIGHT: Record<PersonId, number> = { M: 1, R: 0.7 };
+/* A gram of carbohydrate off target costs as much as 1.4 kcal off target; a
+   gram of fat, 2.2. Fat is scarcer — 42 g against 130 g — so each gram of it
+   is a larger share of its own budget. */
+/* Raising FAT_WEIGHT does nothing measurable — swept at 2.2, 3.5 and 5.0, and
+   Ramesh's fat moved by 0.4 of a percentage point. It is not a scoring choice:
+   his fat comes from scaling her plate, and the oil band caps how far that can
+   go. He lands near 54 g against a 60 g target and well above the 44 g floor,
+   with calories, protein and carbohydrate all on target. Closing that gap means
+   taking ~50 kcal out of his carbohydrate to put it into oil, which is not
+   obviously better. Said on the Plan tab rather than tuned away. */
+const KCAL_FREE = 30;
+const CARB_WEIGHT = 1.4;
+const FAT_WEIGHT = 2.2;
 
 function repeatCost(history: string[] | undefined, id: string): number {
   if (!history?.length) return 0;
@@ -99,12 +112,29 @@ function scoreDay(core: string[], later: string[], req: DayRequest): DayResult |
     if (t.p < b.pMin) return null;
     if (t.f < b.fMin) return null;
 
-    score += Math.abs(t.k - PEOPLE[who].t.k) * PERSON_WEIGHT[who];
+    const target = PEOPLE[who].t;
+
+    /* Calories are what drive the loss, so they get a quadratic tail: the first
+       30 kcal of drift is cheap, and the macro terms below are free to steer
+       inside it, but anything past that becomes expensive fast. A flat linear
+       cost let one day trade 70 kcal for a better carbohydrate figure, which is
+       the wrong trade. */
+    const dk = Math.abs(t.k - target.k);
+    score += (dk + Math.max(0, dk - KCAL_FREE) ** 2 * 0.5) * PERSON_WEIGHT[who];
+
+    /* Calories alone are not the plan. Scoring only kcal let days land within
+       1% of target while carbohydrate ran 18% over and fat 17% under — the
+       right number of calories in the wrong shape. Carbohydrate and fat are
+       scored on their distance from target too, weighted so they steer the
+       choice without ever outvoting the calorie figure. */
+    score += Math.abs(t.c - target.c) * CARB_WEIGHT * PERSON_WEIGHT[who];
+    score += Math.abs(t.f - target.f) * FAT_WEIGHT * PERSON_WEIGHT[who];
+
     if (t.p > b.pMax) { score += (t.p - b.pMax) * 12; notes.push(`${name} runs to ${Math.round(t.p)} g protein`); }
     if (t.f > b.fMax) { score += (t.f - b.fMax) * 14; notes.push(`${name} runs to ${Math.round(t.f)} g fat`); }
     if (t.fb < b.fbMin) { score += (b.fbMin - t.fb) * 10; notes.push(`${name} gets only ${Math.round(t.fb)} g fibre`); }
     /* Protein above target is the point of the plan, so reward it gently. */
-    score -= Math.min(t.p - PEOPLE[who].t.p, 25) * 2;
+    score -= Math.min(t.p - target.p, 25) * 2;
   }
 
   score += repeatCost(req.recent?.b, core[0]!);

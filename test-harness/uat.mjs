@@ -9,25 +9,21 @@
  * at step 2 would have passed on the version he gave up on.
  */
 import { chromium } from 'playwright';
-import { createServer } from 'node:http';
-import { readFileSync, existsSync } from 'node:fs';
-import { extname } from 'node:path';
+import { serve } from './serve.mjs';
 
-const PORT = 8788;
-const TYPES = { '.html': 'text/html', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
-const server = createServer((req, res) => {
-  const url = new URL(req.url, 'http://x');
-  const file = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
-  if (!existsSync(file)) { res.writeHead(404); return res.end('no'); }
-  res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'text/plain' });
-  res.end(readFileSync(file));
-});
-await new Promise(r => server.listen(PORT, r));
-const URLBASE = `http://localhost:${PORT}/`;
+const { url: URLBASE, close: closeServer } = await serve(8788);
 
 let passed = 0; const failures = [];
 const ok = (c, m) => { if (c) passed++; else failures.push(m); };
 const eq = (a, b, m) => ok(Object.is(a, b), `${m}\n      expected ${JSON.stringify(b)}, actual ${JSON.stringify(a)}`);
+
+/* Fail loudly rather than sit at 100% forever: a hung wait is a defect in the
+   test, and a test that hangs teaches nothing. */
+const HARD_LIMIT = setTimeout(() => {
+  console.error('uat: TIMED OUT after 4 minutes — something is waiting on a condition that never comes');
+  process.exit(1);
+}, 240000);
+HARD_LIMIT.unref?.();
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -37,8 +33,10 @@ page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', e => errors.push(String(e)));
 page.on('dialog', d => d.accept());
 
-await page.goto(URLBASE, { waitUntil: 'networkidle' });
+await page.goto(URLBASE, { waitUntil: 'commit' });
+await page.waitForSelector('#nav button', { timeout: 20000 });
 
+console.error('  [uat] 1. it loads, and it loads clean');
 /* ---------- 1. it loads, and it loads clean ---------- */
 eq(errors.length, 0, `the page loads with no runtime errors:\n      ${errors.slice(0, 3).join('\n      ')}`);
 ok(await page.locator('#main').innerHTML() !== '', 'the main area renders something');
@@ -46,6 +44,7 @@ eq(await page.locator('#nav button').count(), 6, 'six tabs — Foods was silentl
 for (const label of ['Today', 'Shop', 'Plan', 'Foods', 'Weight', 'Guide'])
   ok(await page.locator(`#nav button:has-text("${label}")`).count() === 1, `the ${label} tab exists`);
 
+console.error('  [uat] 2. Today: three meals, not five');
 /* ---------- 2. Today: three meals, not five ---------- */
 const meals = await page.locator('.meal').count();
 eq(meals, 3, 'Today shows three meals. Eating six times a day was never the ask');
@@ -56,6 +55,7 @@ for (const line of await page.locator('.ing .g i').allTextContents().then(a => [
   ok(['Mrinal', 'Ramesh', 'in the pan'].includes(line), `every ingredient line names its plate ("${line}")`);
 ok(await page.locator('.wbadge').count() > 0, 'raw and dry badges are visible, not the faintest grey on the page');
 
+console.error('  [uat] 3. THE WALK-THROUGH HE NEVER FINISHED');
 /* ---------- 3. THE WALK-THROUGH HE NEVER FINISHED ---------- */
 await page.click('#nav button:has-text("Shop")');
 await page.waitForSelector('.steps');
@@ -138,8 +138,10 @@ ok(await page.locator('.banner:has-text("No weekly total yet")').count() === 1,
 const eggRow = await page.locator('.gitem:has-text("egg")').first();
 if (await eggRow.count()) ok(!/\d\.\d+ kg/.test(await eggRow.innerText()), 'eggs are counted, not weighed');
 
+console.error('  [uat] 4. persistence across a reload');
 /* ---------- 4. persistence across a reload ---------- */
-await page.reload({ waitUntil: 'networkidle' });
+await page.reload({ waitUntil: 'commit' });
+await page.waitForSelector('#nav button', { timeout: 20000 });
 await page.click('#nav button:has-text("Shop")');
 await page.waitForTimeout(300);
 const afterReload = await page.locator('.gitem, .wrow, .opt.on, .dtype.on').count();
@@ -150,6 +152,7 @@ if (await page.locator('.opt').count())
   ok(await page.locator('.opt.on').count() > 0,
      'the DISHES survive a reload. The legacy save() dropped state.pick entirely, so every choice reverted while the plan built from it stayed');
 
+console.error('  [uat] 5. viewport, at the three widths that matter');
 /* ---------- 5. viewport, at the three widths that matter ---------- */
 for (const width of [320, 390, 430]) {
   await page.setViewportSize({ width, height: 844 });
@@ -170,6 +173,7 @@ for (const width of [320, 390, 430]) {
 }
 await page.setViewportSize({ width: 390, height: 844 });
 
+console.error('  [uat] 6. contrast on the header, measured not asserted');
 /* ---------- 6. contrast on the header, measured not asserted ---------- */
 const contrast = await page.evaluate(() => {
   const lum = c => { const v = c.map(x => x / 255).map(x => x <= .03928 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4);
@@ -231,6 +235,7 @@ for (const tab of ['today', 'shop', 'plan', 'foods', 'weight', 'guide']) {
     bad.slice(0, 4).map(b => `"${b.text}" ${b.ratio}:1 needs ${b.need} at ${b.px}px (${b.sel})`).join('; '));
 }
 
+console.error('  [uat] 7. swap, meal picker, and the Cronometer copy');
 /* ---------- 7. swap, meal picker, and the Cronometer copy ---------- */
 await page.click('#nav button[data-tab="today"]');
 await page.waitForSelector('.meal');
@@ -249,6 +254,7 @@ ok(await page.locator('.swapopt').count() >= 2, 'the meal picker offers other di
 await page.keyboard.press('Escape');
 await page.waitForTimeout(120);
 
+console.error('  [uat] 8. Foods, Plan and Weight');
 /* ---------- 8. Foods, Plan and Weight ---------- */
 await page.click('#nav button[data-tab="foods"]');
 await page.waitForSelector('.frow');
@@ -279,12 +285,14 @@ await page.click('#wAdd');
 await page.waitForTimeout(150);
 ok(!(await page.locator('#main').innerText()).includes('999'), 'and a nonsense weight is refused');
 
+console.error('  [uat] 9. keyboard focus');
 /* ---------- 9. keyboard focus ---------- */
 await page.click('#nav button[data-tab="today"]');
 await page.keyboard.press('Tab');
 const focused = await page.evaluate(() => document.activeElement?.tagName);
 ok(['BUTTON', 'A', 'INPUT'].includes(focused), `tab moves focus to something interactive (got ${focused})`);
 
+console.error('  [uat] 10. the manifest is a real file');
 /* ---------- 10. the manifest is a real file ---------- */
 const mf = await page.request.get(URLBASE + 'manifest.webmanifest');
 eq(mf.status(), 200, 'manifest.webmanifest is served as a real file, not a blob URL');
@@ -292,10 +300,91 @@ const mfj = await mf.json();
 eq(mfj.display, 'standalone', 'and declares standalone display');
 ok(mfj.icons?.[0]?.src?.endsWith('.png'), 'with a real PNG icon, not a data: URI');
 
+console.error('  [uat] 11. touch targets');
+/* ---------- 11. touch targets ---------- */
+/* A phone on a wet worktop. 44 x 44 px is the floor; 124 of 130 controls were
+   under it, including every day in the 102-day strip. */
+await page.setViewportSize({ width: 390, height: 844 });
+for (const tab of ['today', 'shop', 'foods', 'weight']) {
+  await page.click(`#nav button[data-tab="${tab}"]`);
+  await page.waitForTimeout(150);
+  const small = await page.evaluate(() => {
+    const bad = [];
+    for (const b of document.querySelectorAll('#main button, .nav button, .hero button, .strip button')) {
+      const r = b.getBoundingClientRect();
+      if (r.width < 1 || r.height < 1) continue;
+      /* WCAG 2.5.5 exempts a target that is inline in a sentence — a text link
+         inside a paragraph cannot be 44 px tall without breaking the paragraph.
+         Everything a thumb aims at deliberately is in scope. */
+      if (b.classList.contains('linkbtn')) continue;
+      if (r.height < 44) bad.push({ t: (b.textContent || '').trim().slice(0, 18), h: Math.round(r.height),
+                                    c: b.className.split(' ')[0] || b.id || 'unclassed' });
+    }
+    return bad;
+  });
+  eq(small.length, 0, `${tab}: every control is at least 44 px tall — ` +
+    small.slice(0, 4).map(b => `"${b.t}" ${b.h}px (.${b.c})`).join(', '));
+}
+
+console.error('  [uat] 12. it works with no connection');
+/* ---------- 12. it works with no connection ---------- */
+/* The app declared a manifest and standalone styling, so it looked installable.
+   Added to a home screen with no signal it showed nothing at all — for an app
+   read while cooking, that is the point of installing it. */
+await page.goto(URLBASE, { waitUntil: 'commit' });
+await page.waitForSelector('#nav button', { timeout: 20000 });
+
+/* navigator.serviceWorker.ready never rejects — it just waits. Racing it is
+   the difference between a failing test and a hanging one. */
+const swReady = await page.evaluate(() => Promise.race([
+  navigator.serviceWorker?.ready.then(r => Boolean(r.active)).catch(() => false) ?? false,
+  new Promise(res => setTimeout(() => res(false), 8000)),
+]));
+ok(swReady, 'the service worker registers and activates');
+
+/* A worker controls the page from the NEXT navigation, not the one that
+   registered it. Without this reload the offline test is measuring an
+   uncontrolled page and fails for the wrong reason. */
+await page.reload({ waitUntil: 'commit' });
+await page.waitForSelector('#nav button', { timeout: 20000 });
+const controlling = await page.evaluate(() => Boolean(navigator.serviceWorker?.controller));
+ok(controlling, 'and controls the page after one reload');
+const shell = await page.evaluate(async () => {
+  const names = await caches.keys();
+  if (!names.length) return [];
+  const c = await caches.open(names[0]);
+  return (await c.keys()).map(r => new URL(r.url).pathname);
+});
+ok(shell.includes('/index.html'), `the app itself is cached for offline use (${shell.join(' ')})`);
+ok(shell.includes('/icon.png'), 'so is the home-screen icon');
+
+await ctx.setOffline(true);
+try {
+  /* 'commit' rather than 'load': offline, the Google Fonts <link> never
+     resolves, and waiting for the load event would hang forever. The page is
+     readable long before then — the fonts degrade to Georgia and a system
+     sans, which is what the fallback stack is for. */
+  await page.reload({ waitUntil: 'commit', timeout: 15000 });
+  await page.waitForSelector('.meal', { timeout: 15000 });
+  const offlineMeals = await page.locator('.meal').count();
+  ok(offlineMeals === 3, `the whole day still loads with no connection (${offlineMeals} meals)`);
+  ok(await page.locator('#nav button').count() === 6, 'and all six tabs are there offline');
+  await page.click('#nav button[data-tab="foods"]');
+  await page.waitForSelector('.frow', { timeout: 10000 });
+  ok(await page.locator('.frow').count() === 63, 'including all 63 foods, which are inlined in the page');
+} catch (e) {
+  ok(false, `offline load failed: ${String(e).slice(0, 120)}`);
+} finally {
+  await ctx.setOffline(false);
+  await page.goto(URLBASE, { waitUntil: 'commit' });
+await page.waitForSelector('#nav button', { timeout: 20000 });
+}
+
 eq(errors.length, 0, `no runtime errors across the whole session:\n      ${errors.slice(0, 5).join('\n      ')}`);
 
+clearTimeout(HARD_LIMIT);
 await browser.close();
-server.close();
+closeServer();
 
 if (failures.length) {
   console.error(`\nuat: ${failures.length} FAILED, ${passed} passed\n`);

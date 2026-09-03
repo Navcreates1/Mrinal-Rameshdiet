@@ -4,7 +4,7 @@
    from state. At this size that is simpler than diffing and impossible to get
    subtly out of sync. */
 
-import { F } from '../data/foods.ts';
+import { F, PRICED } from '../data/foods.ts';
 import { M } from '../data/meals.ts';
 import { PEOPLE } from '../data/people.ts';
 import type { PersonId } from '../data/people.ts';
@@ -177,12 +177,13 @@ function openPrice(fid: string): void {
   openSheet(
     `Price of ${o.n}`,
     `The price ${unit}, off the label. ${o.psrc ? 'Currently an approximate figure: ' + o.psrc : 'Not known yet — nothing is guessed.'}`,
-    `<div class="wadd"><input id="pkg" type="number" step="0.01" min="0" placeholder="£ ${unit}"
-        value="${now !== undefined ? now : ''}" aria-label="Price ${unit}">
+    `<div class="wadd"><input id="pkg" type="number" step="0.01" min="0.01" max="500" placeholder="£ ${unit}"
+        value="${now !== undefined ? now : ''}" aria-label="Price ${unit}" enterkeyhint="done">
       <button data-setprice="${fid}">Save</button></div>
-     <p class="src">Whatever you type replaces the estimate on this device for good, and feeds
-       the weekly total. A price is only ever a real one — either read off a label by you, or
-       one of the seven that were actually looked up.</p>`);
+     <p class="src" id="pkgErr" role="alert"></p>
+     <p class="src">Whatever you type replaces this on the device for good and feeds the weekly
+       total. Nothing here is ever estimated: a price is either one you read off a label, or one
+       of the ${PRICED.length} that were looked up from a real listing.</p>`);
 }
 
 /* ------------------------------------------------------------------ events */
@@ -200,7 +201,7 @@ function toggle(list: string[], id: string): void {
 }
 
 function onClick(e: Event): void {
-  const t = (e.target as HTMLElement).closest('[data-tab],[data-reset],[data-day],[data-who],[data-mode],[data-step],[data-week],[data-daytype],[data-pickmeal],[data-pickveg],[data-suggest],[data-suggestveg],[data-wantlater],[data-buildweek],[data-have],[data-tick],[data-price],[data-setprice],[data-swap],[data-doswap],[data-pickslot],[data-doslot],[data-copyday],[data-copyshop],[data-logwho],[data-foodfilter],#wAdd,#sheetClose') as HTMLElement | null;
+  const t = (e.target as HTMLElement).closest('[data-tab],[data-reset],[data-golater],[data-day],[data-who],[data-mode],[data-step],[data-week],[data-daytype],[data-pickmeal],[data-pickveg],[data-suggest],[data-suggestveg],[data-wantlater],[data-buildweek],[data-have],[data-tick],[data-price],[data-setprice],[data-swap],[data-doswap],[data-pickslot],[data-doslot],[data-copyday],[data-copyshop],[data-logwho],[data-foodfilter],#wAdd,#sheetClose') as HTMLElement | null;
   if (!t) return;
   const d = t.dataset;
 
@@ -218,6 +219,7 @@ function onClick(e: Event): void {
 
   /* ---- the Shop journey ---- */
   if (d.step) { state.step = Number(d.step); return draw(); }
+  if (d.golater) { state.tab = 'shop'; state.step = 1; persist(); return draw(); }
   if (d.week) { state.shopWeek = Number(d.week); state.step = state.plans[Number(d.week)] ? 5 : 0; return draw(); }
   if (d.daytype) {
     const [i, type] = d.daytype.split(':');
@@ -277,9 +279,24 @@ function onClick(e: Event): void {
   if (d.tick) { state.ticked[d.tick] = !state.ticked[d.tick]; persist(); return; }
   if (d.price) { return openPrice(d.price); }
   if (d.setprice) {
-    const v = Number((document.getElementById('pkg') as HTMLInputElement).value);
-    if (v > 0) { state.prices[d.setprice] = v; persist(); }
-    closeSheet(); return draw();
+    const input = document.getElementById('pkg') as HTMLInputElement;
+    const v = Number(input.value);
+    /* A negative price used to be swallowed: nothing saved, nothing said, sheet
+       closed. Now it says why, and the sheet stays open so it can be corrected. */
+    const problem = input.value.trim() === '' ? 'Type a price first.'
+      : !Number.isFinite(v) ? 'That is not a number.'
+      : v <= 0 ? 'A price has to be more than nothing.'
+      : v > 500 ? 'That looks like a typo — over £500 for a kilogram.'
+      : null;
+    const note = document.getElementById('pkgErr');
+    if (problem) {
+      input.setAttribute('aria-invalid', 'true');
+      if (note) note.textContent = problem;
+      input.focus(); input.select();
+      return;
+    }
+    state.prices[d.setprice] = v;
+    persist(); closeSheet(); return draw();
   }
 
   /* ---- Today ---- */

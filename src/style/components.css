@@ -175,4 +175,36 @@
 
 /* A chosen dish sits on --leaf-soft, where the tertiary ink drops to 4.02:1.
    The tint changes the background, so the text on it has to change too. */
-.opt.on .on2 em{color:var(--ink-2)}
+.opt.on .on2 em,.opt.on .basenote{color:var(--ink-2)}
+
+/* A pack shortfall is shown, not swallowed. */
+.gn em .under{color:var(--chilli);font-weight:600}
+
+/* Wizard steps are buttons now, not decoration. A tick means done. */
+.steps{display:flex;gap:4px;margin:14px 0 16px}
+.stp{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;
+     padding:8px 2px;border-radius:10px;background:transparent;font-size:10px;color:var(--ink-3)}
+.stp b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;
+       border:1px solid var(--rule);background:var(--card);font-size:11px;font-weight:700;color:var(--ink-3)}
+.stp span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.stp.done{color:var(--leaf)}
+.stp.done b{background:var(--leaf-soft);border-color:#BFD8CE;color:var(--leaf)}
+.stp.now{color:var(--ink)}
+.stp.now b{background:var(--leaf);border-color:var(--leaf);color:#fff}
+.stp:disabled{opacity:.45}
+.stp:not(:disabled){cursor:pointer}
+
+/* "base recipe" on the picker: the same dish plates larger once the solver
+   scales it to a slot, and showing two numbers unlabelled read as a bug. */
+.basenote{font-style:normal;font-size:9.5px;color:var(--ink-3);letter-spacing:.02em}
+
+/* Touch targets. A phone on a wet worktop needs 44 px, not 28. */
+.chip,.fchip,.weeks .wk,.dtype,.cbtn,.swapbtn,.pickbtn,.gc,.havebtn,.vchip,
+.modes button,.whobar button,.whobar2 button,.nav button,.stp{min-height:44px}
+.vchip{display:flex;flex-direction:column;justify-content:center}
+.gc,.cbtn{min-width:64px}
+.copybar button,.wadd button,.wadd input,#q{min-height:46px}
+/* .linkbtn stays inline inside a sentence — WCAG 2.5.5 exempts those, and
+   forcing 44 px would break the paragraph it sits in. It gets a generous
+   vertical hit area instead, which does not affect line layout. */
+.linkbtn{padding:10px 0;margin:-10px 0}

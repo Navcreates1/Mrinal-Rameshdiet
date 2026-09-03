@@ -43,7 +43,7 @@ export interface Food {
 }
 
 export const F: Record<string, Food> = {
-  chicken: { n: 'Chicken breast, skinless', s: 'Skinless breast fillet', k: 106, p: 22.5, c: 0, f: 2.6, fb: 0, v: 0, i: 'chicken', w: 'raw', cv: 0.75, fresh: 1, packs: [1600, 1000, 650, 320], cost: 6.5, psrc: 'Tesco 1.6 kg pack £10.65, £9.50 Clubcard — £5.94–6.66/kg. Smaller packs run £7.85–8.20/kg', src: 'USDA FDC 2646170' },
+  chicken: { n: 'Chicken breast, skinless', s: 'Skinless breast fillet', k: 106, p: 22.5, c: 0, f: 2.6, fb: 0, v: 0, i: 'chicken', w: 'raw', cv: 0.75, fresh: 1, frozenok: 1, packs: [1600, 1000, 650, 320], cost: 6.5, psrc: 'Tesco 1.6 kg pack £10.65, £9.50 Clubcard — £5.94–6.66/kg. Smaller packs run £7.85–8.20/kg', src: 'USDA FDC 2646170' },
   cod: { n: 'Cod fillet', s: 'Skinless loin or fillet', k: 82, p: 17.8, c: 0, f: 0.7, fb: 0, v: 0, i: 'fish', w: 'raw', cv: 0.78, frozenok: 1, packs: [480, 260], src: 'USDA FDC' },
   salmon: { n: 'Salmon fillet', s: 'Skinless fillet', k: 131, p: 25.4, c: 0, f: 4.3, fb: 0, v: 0, i: 'fish', w: 'raw', cv: 0.78, frozenok: 1, packs: [480, 240], src: 'USDA FDC' },
   prawns: { n: 'Prawns, peeled', s: 'Peeled and deveined, tails off', k: 71, p: 13.6, c: 0.9, f: 1, fb: 0, v: 0, i: 'prawn', w: 'raw', cv: 0.75, frozenok: 1, packs: [400, 200], src: 'USDA FDC' },

@@ -58,6 +58,40 @@ for (const laterCount of [0, 1] as const) {
 }
 ok(checked === DAYS * 2, `all ${DAYS} days solved in both shapes (got ${checked})`);
 
+/* ---------- 1b. the right calories in the right SHAPE ---------- */
+/* Scoring calories alone put Mrinal 18% over on carbohydrate and 17% under on
+   fat while the kcal figure sat within 1% — the right total, the wrong day.
+   Carbohydrate and fat are scored now, and these bounds hold the improvement. */
+{
+  const recent: Record<'b' | 'l' | 'd' | 'later', string[]> = { b: [], l: [], d: [], later: [] };
+  const off: Record<string, number[]> = {};
+  for (let i = 0; i < DAYS; i++) {
+    const r = bestDay({ vegetarian: isFestivalVeg(dayOf(i)), laterCount: 0, recent })!;
+    recent.b.push(r.core[0]!); recent.l.push(r.core[1]!); recent.d.push(r.core[2]!);
+    if (recent.b.length > 7) { recent.b.shift(); recent.l.shift(); recent.d.shift(); }
+    for (const who of WHO) {
+      const t = r.solved[who].total, g = PEOPLE[who].t;
+      (off[who + 'k'] ??= []).push(100 * (t.k - g.k) / g.k);
+      (off[who + 'c'] ??= []).push(100 * (t.c - g.c) / g.c);
+      (off[who + 'f'] ??= []).push(100 * (t.f - g.f) / g.f);
+    }
+  }
+  const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
+  const worst = (a: number[]) => Math.max(...a.map(Math.abs));
+  for (const who of WHO) {
+    const name = PEOPLE[who].name;
+    ok(Math.abs(mean(off[who + 'k']!)) <= 1, `${name}: calories average within 1% of target (${mean(off[who + 'k']!).toFixed(1)}%)`);
+    ok(worst(off[who + 'k']!) <= 5, `${name}: no day more than 5% off on calories (worst ${worst(off[who + 'k']!).toFixed(0)}%)`);
+    ok(Math.abs(mean(off[who + 'c']!)) <= 8, `${name}: carbohydrate averages within 8% of target (${mean(off[who + 'c']!).toFixed(1)}%) — was 18% over`);
+    ok(worst(off[who + 'c']!) <= 25, `${name}: no day more than 25% off on carbohydrate`);
+    ok(worst(off[who + 'f']!) <= 28, `${name}: no day more than 28% off on fat`);
+  }
+  /* Ramesh's fat runs about 10% under target and that is structural, not a
+     scoring bug — see the note in daysolver.ts. Pinned so it cannot quietly
+     get worse. */
+  ok(mean(off.Rf!) > -14, `Ramesh's fat stays within 14% under target (${mean(off.Rf!).toFixed(1)}%)`);
+}
+
 /* ---------- 2. the later item comes OUT of the budget ---------- */
 for (const vegetarian of [false, true]) {
   const a = bestDay({ vegetarian, laterCount: 0 })!;

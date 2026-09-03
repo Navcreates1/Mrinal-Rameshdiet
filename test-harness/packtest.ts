@@ -28,6 +28,11 @@ ok(eggs.note.includes('eggs'), 'and the list says "eggs"');
 const boxes = Object.values(bestCombo(26, F.egg!.unit!.box!).counts).reduce((a, b) => a + b, 0);
 eq(boxes, 2, 'handover s12.2: 26 eggs is two boxes, not three');
 
+/* The chicken case, from the QA pass: 2.65 kg needed, two packs make 2.6 kg. */
+const chicken = packUp('chicken', 2650);
+eq(chicken.buy, 2600, '2.65 kg of chicken is covered by 1 x 1 kg + 1 x 1.6 kg');
+eq(chicken.short, 50, 'and the 50 g shortfall is stated on the line rather than left to be noticed');
+
 /* The yoghurt case. */
 const fage = packUp('greek', 2600);
 const tubs = fage.note.split('+').length;
@@ -49,6 +54,17 @@ for (const fid of Object.keys(F))
   for (const need of [30, 90, 220, 480, 1010, 2400]) {
     const p = packUp(fid, need);
     ok(p.buy >= need * SHORTFALL_TOLERANCE, `${fid} at ${need} g: buying ${p.buy} covers the need`);
+    /* A shortfall is allowed — buying a third pack of chicken to cover 50 g is
+       the worse error — but it is never silent. If the trolley holds less than
+       the week needs, the line says so. */
+    if (p.buy < need) {
+      ok(p.short !== undefined, `${fid} at ${need} g: a ${need - p.buy} g shortfall is disclosed, not swallowed`);
+      eq(p.short, Math.round(need - p.buy), `${fid} at ${need} g: the shortfall is stated exactly`);
+      ok(need - p.buy <= need * (1 - SHORTFALL_TOLERANCE) + 1,
+        `${fid} at ${need} g: the shortfall stays inside the 3% tolerance`);
+    } else {
+      eq(p.short, undefined, `${fid} at ${need} g: nothing to disclose when it covers`);
+    }
     ok(p.buy <= Math.max(need * 3, need + 5000), `${fid} at ${need} g: ${p.buy} is not a pallet`);
     if (F[fid]!.packs) {
       const n = Object.values(bestCombo(need, F[fid]!.packs!).counts).reduce((a, b) => a + b, 0);
@@ -66,13 +82,14 @@ eq(Object.values(bestCombo(4800, [500, 250]).counts).reduce((a, b) => a + b, 0),
 
 /* Shop grouping: soft greens go on the midweek trip, dals go to the grocer. */
 eq(groupOf(F.spinach!), 'super-fresh', 'spinach is a midweek top-up — buy it Monday, bin it Friday');
-/* Midweek is "perishable AND not freezable". Frozen fish rides with the main
-   shop; salad does not. Chicken lands on the midweek trip because it is flagged
-   fresh with no frozenok — the legacy app did the same, but handover s12.1 puts
-   it in the main shop. Recorded in DECISIONS.md as a question for Naveen rather
-   than settled silently by editing a sourced food record. */
-eq(groupOf(F.chicken!), 'super-fresh', 'chicken currently lands on the midweek trip (see DECISIONS.md)');
+/* Midweek is "perishable AND not freezable". Chicken was landing under
+   "Salad and soft greens" while the main-shop panel said "Chicken, dairy,
+   frozen fish, tins" — an external QA pass flagged it independently, which is
+   two signals for what handover s12.1 said all along. Chicken breast freezes,
+   so it carries frozenok now and joins the main shop. */
+eq(groupOf(F.chicken!), 'super-main', 'handover s12.1: chicken is the main supermarket shop');
 eq(groupOf(F.cod!), 'super-main', 'cod is frozen-friendly, so it rides with the main shop');
+eq(groupOf(F.spinach!), 'super-fresh', 'and soft greens are still the midweek trip');
 eq(groupOf(F.atta!), 'indian-main', 'atta is the Indian grocer, and the bag lasts months');
 eq(groupOf(F.paneerlf!), 'indian-main', 'paneer is the Indian grocer');
 eq(groupOf(F.lauki!), 'indian-fresh', 'lauki is a grocer top-up');
