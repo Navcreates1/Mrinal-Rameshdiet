@@ -161,10 +161,21 @@ for (const [mid, want] of Object.entries(g.meals) as [string, any][]) {
     near(t.fb, e.fb, 0.001, `goldens: ${mid} fibre for ${who}`);
   }
 }
-/* The calendar, day by day. */
-for (const row of g.calendar as { i: number; iso: string; veg: number }[]) {
-  eq(dayOf(row.i).toISOString().slice(0, 10), row.iso, `goldens: day ${row.i} date`);
-  eq(isFestivalVeg(dayOf(row.i)) ? 1 : 0, row.veg, `goldens: day ${row.i} vegetarian status`);
+/* The calendar, day by day — in LOCAL dates.
+   These were re-baselined on 2026-09-03. The original app walked the plan by
+   adding 86,400,000 ms a day, which lands on 25 October twice because the
+   clocks go back, so every date after it was one behind and 10 December was
+   unreachable. The goldens had faithfully recorded that. See DECISIONS.md.
+
+   The comparison was toISOString(), which is UTC and stayed 102 unique strings
+   while the local dates were 101 — it could not see the bug it was there to
+   catch. It is local now. The 22 fasting-day indices are unchanged by the fix,
+   and calendartest.ts checks the transition directly. */
+for (const row of g.calendar as { i: number; local: string; veg: number }[]) {
+  const d = dayOf(row.i);
+  const local = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  eq(local, row.local, `goldens: day ${row.i} local date`);
+  eq(isFestivalVeg(d) ? 1 : 0, row.veg, `goldens: day ${row.i} vegetarian status`);
 }
 
 /* ---------- 4. internal consistency ---------- */
@@ -185,5 +196,41 @@ for (const [mid, m] of Object.entries(M)) {
    overloads carbohydrate. Naming them means adding a ninth is a deliberate act. */
 deep(MEAL_IDS.filter(isPulse).sort(), ['bv3', 'dv1', 'dv3', 'dv4', 'dv5', 'lv3', 'lv4', 'lv5'],
   'exactly eight dishes are built on a pulse');
+
+/* ---------- 5. no quantity is typed into a recipe ---------- */
+/* The method text is what someone standing at a hob actually follows. It used
+   to carry hand-typed weights that disagreed with the rows above them — "One
+   roti from 40 g atta" beside a row reading 55 g. Across three rotis a day that
+   is roughly 300 kcal unaccounted for, two thirds of Mrinal's deficit. Two of
+   them were wrong in the handover itself, before any scaling.
+
+   Quantities are {foodId} placeholders now, resolved from the same solved plate
+   as the rows. These assertions stop a number being typed back in. */
+const LITERALS_ALLOWED = [
+  /\d+\s*ml (?:cold )?water/i,   // water is not weighed and is not scaled
+  /\d+\s*ml water/i,
+  /scoop is roughly \d+\s*g/i,   // a fact about the tub, not a portion
+  /scoop on most tubs is about \d+\s*g/i,
+];
+for (const [mid, meal] of Object.entries(M)) {
+  const weights = new Set(meal.x.map(([, grams]) => grams));
+  for (const step of meal.m) {
+    /* Every placeholder must name an ingredient this meal actually has. */
+    for (const m of step.matchAll(/\{(\w+)\}/g)) {
+      const fid = m[1]!;
+      ok(meal.x.some(([f]) => f === fid),
+        `${mid}: method references {${fid}}, which is not an ingredient of this dish`);
+    }
+    /* And no bare number may equal one of this meal's weights — that is a
+       quantity typed by hand instead of read from the data. */
+    for (const m of step.matchAll(/(\d+(?:\.\d+)?)\s*(?:g|ml)\b/gi)) {
+      const value = Number(m[1]);
+      const context = step.slice(Math.max(0, m.index! - 30), m.index! + 30);
+      if (LITERALS_ALLOWED.some(re => re.test(context))) continue;
+      ok(!weights.has(value),
+        `${mid}: "${m[0]}" is typed into the method and matches an ingredient weight — use a {placeholder}\n         ...${context}...`);
+    }
+  }
+}
 
 report('datalock');

@@ -113,6 +113,31 @@ function ingredientLine(meal: SolvedMeal, i: number, day: number, slot: string, 
 
 const SLOT_NAME: Record<string, string> = { b: 'Breakfast', l: 'Lunch', d: 'Dinner', x: 'Later' };
 
+/* Method text carries {foodId} placeholders, never a typed number.
+
+   The recipes used to say "One roti from 40 g atta" beside a row reading 55 g,
+   and the sentence is what someone standing at a hob actually follows. Across
+   three rotis a day that was roughly 300 kcal unaccounted for — two thirds of
+   Mrinal's entire deficit. Two of the numbers disagreed with their own
+   ingredient row in the original handover, before any scaling: dnv1's table
+   said 50 g of atta and its method said 45 g; lnv3's said 7.5 ml of oil and its
+   method said 5 ml.
+
+   Now every quantity in the prose is the same value as the row above it,
+   because it is read from the same solved plate. */
+function methodStep(step: string, forM: SolvedMeal, forR: SolvedMeal): string {
+  return esc(step).replace(/\{(\w+)\}/g, (whole, fid: string) => {
+    const i = forM.rows.findIndex(r => r[0] === fid);
+    if (i < 0) return whole;
+    const gM = forM.rows[i]![1], gR = forR.rows[i]![1];
+    const one = (g: number) => `<b>${amt(fid, g)}</b>`;
+    if (state.who === 'M') return one(gM);
+    if (state.who === 'R') return one(gR);
+    /* Same order as the cells above the method: her plate, then his. */
+    return gM === gR ? one(gM) : `${one(gM)} / ${one(gR)}`;
+  });
+}
+
 function mealCard(mM: SolvedMeal, mR: SolvedMeal, slot: string, day: number, n: number): string {
   const meal = M[mM.mid]!;
   const t = mM.macros;
@@ -124,7 +149,7 @@ function mealCard(mM: SolvedMeal, mR: SolvedMeal, slot: string, day: number, n: 
         ? `<button class="pickbtn" data-pickslot="${day}:${slot}">change</button>` : ''}
     </header>
     <div class="ings">${mM.rows.map((_, i) => ingredientLine(mM, i, day, slot, mR)).join('')}</div>
-    <ol class="method">${meal.m.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
+    <ol class="method">${meal.m.map(step => `<li>${methodStep(step, mM, mR)}</li>`).join('')}</ol>
     ${n === 0 ? `<p class="src">Weigh the pan total, cook it as one dish, then weigh the two plates before anyone sits down.</p>` : ''}
   </section>`;
 }

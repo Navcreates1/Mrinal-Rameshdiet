@@ -36,7 +36,7 @@ export const M: Record<string, Meal> = {
       'Heat the measured oil, soften the onion and tomato for 3 minutes.',
       'Add the spinach, wilt for 1 minute, then pour in the egg.',
       'Stir on a low heat until just set. Do not add more oil at this stage.',
-      'Roll one roti from 35 g of atta and cook it dry on a hot tawa.',
+      'Roll one roti from {atta} of atta and cook it dry on a hot tawa.',
     ],
   },
   bnv2: {
@@ -64,7 +64,7 @@ export const M: Record<string, Meal> = {
       'Crumble the weighed paneer with your fingers.',
       'Heat the measured oil, soften onion, tomato and capsicum for 4 minutes.',
       'Add the paneer with turmeric, chilli and salt, cook 3 minutes.',
-      'Roll one roti from 35 g of atta and cook it dry on a hot tawa.',
+      'Roll one roti from {atta} of atta and cook it dry on a hot tawa.',
     ],
   },
   bv3: {
@@ -81,7 +81,7 @@ export const M: Record<string, Meal> = {
     t: 'Huel shake', v: 1, ic: 'whey', slot: 'b',
     x: [['huelb', 75, 'pro'], ['berries', 80, 'fruit']],
     m: [
-      'Weigh the powder — do not eyeball the scoop. A scoop is roughly 45 g, so this is about one and a half.',
+      'Weigh the powder — do not eyeball the scoop. {huelb}, and a scoop is roughly 45 g.',
       'Shake with 400 ml cold water for 10 seconds and leave it 2 minutes to thicken.',
       'Berries on the side. This is the fastest breakfast in the plan and the one to reach for on a morning that has already gone wrong.',
       'Huel is vegan, so it works on the Ganesh and Dasara days too.',
@@ -91,7 +91,7 @@ export const M: Record<string, Meal> = {
     t: 'Whey shake', v: 1, ic: 'whey', slot: 'mm',
     x: [['whey', 25, 'pro']],
     m: [
-      'Weigh 25 g of isolate — slightly under one scoop on most tubs.',
+      'Weigh {whey} of isolate — a scoop on most tubs is about 30 g.',
       'Shake with 250 ml cold water. Not milk: milk adds calories she has not budgeted.',
     ],
   },
@@ -118,7 +118,7 @@ export const M: Record<string, Meal> = {
     x: [['chicken', 140, 'pro'], ['oil', 7.5, 'fat'], ['rice', 40, 'carb'], ['spinach', 150, 'veg'], ['onion', 50, 'fix'], ['tomato', 60, 'fix']],
     m: [
       'Weigh the chicken RAW and cut into pieces.',
-      'Heat the measured 7.5 ml of oil - no free pouring - and brown the onion.',
+      'Heat the measured {oil} of oil — no free pouring — and brown the onion.',
       'Add tomato, ginger, garlic and the usual masala, then the chicken.',
       'Add 150 ml water, cover, simmer 15 minutes. Stir the spinach through at the end.',
       'Cook the weighed rice separately.',
@@ -131,7 +131,7 @@ export const M: Record<string, Meal> = {
       'Weigh the salmon RAW. Season with salt, pepper and lemon.',
       'Rinse and cook the weighed quinoa in 2 parts water for 15 minutes.',
       'Steam the beans, then toss with the measured oil and garlic.',
-      'Grill the salmon 4 minutes a side. Salmon carries its own fat - that is why the oil stays at 5 ml.',
+      'Grill the salmon 4 minutes a side. Salmon carries its own fat, which is why the oil stays at {oil}.',
     ],
   },
   lnv4: {
@@ -158,7 +158,7 @@ export const M: Record<string, Meal> = {
     t: 'Palak paneer with rice', v: 1, ic: 'paneer', slot: 'l',
     x: [['paneerlf', 95, 'pro'], ['spinach', 250, 'veg'], ['oil', 7.5, 'fat'], ['rice', 32, 'carb'], ['onion', 40, 'fix'], ['tomato', 50, 'fix']],
     m: [
-      'Blanch the weighed spinach 2 minutes then blend. 250 g raw collapses to very little.',
+      'Blanch the weighed spinach 2 minutes then blend. {spinach} raw collapses to very little.',
       'Heat the measured oil, fry onion, tomato, ginger and garlic.',
       'Add the spinach puree and simmer 5 minutes. No cream, no butter.',
       'Fold in the weighed paneer at the end. Serve with the plain cooked rice.',
@@ -168,7 +168,7 @@ export const M: Record<string, Meal> = {
     t: 'Soya chunk curry with rice', v: 1, ic: 'soya', slot: 'l',
     x: [['soya', 45, 'pro'], ['greek', 70, 'fix'], ['whey', 8, 'fix'], ['oil', 10, 'fat'], ['rice', 20, 'carb'], ['capsicum', 150, 'veg'], ['onion', 50, 'fix'], ['tomato', 60, 'fix']],
     m: [
-      'Weigh 45 g DRY soya. Soak in boiling water 10 minutes, then squeeze out every drop.',
+      'Weigh {soya} DRY soya. Soak in boiling water 10 minutes, then squeeze out every drop.',
       'Heat the measured oil, brown the onion, add tomato and masala.',
       'Add capsicum and the squeezed soya, splash in 150 ml water, simmer 10 minutes.',
       'Cook the weighed rice separately. The yoghurt with whey stirred through is not optional - it is part of the protein.',
@@ -178,7 +178,7 @@ export const M: Record<string, Meal> = {
     t: 'Rajma with rice and curd', v: 1, ic: 'dal', slot: 'l',
     x: [['rajma', 50, 'pro'], ['greek', 90, 'fix'], ['whey', 10, 'fix'], ['oil', 7.5, 'fat'], ['rice', 18, 'carb'], ['spinach', 150, 'veg'], ['onion', 50, 'fix'], ['tomato', 60, 'fix']],
     m: [
-      'Weigh 50 g DRY rajma, soak overnight, pressure-cook 5 whistles.',
+      'Weigh {rajma} DRY rajma, soak overnight, pressure-cook 5 whistles.',
       'Heat the measured oil, make the onion-tomato base with ginger and garlic.',
       'Add the cooked rajma with its water and simmer 10 minutes.',
       'Wilt the spinach in at the end. Small rice portion here because rajma is already high in carbohydrate.',
@@ -189,10 +189,10 @@ export const M: Record<string, Meal> = {
     t: 'Chana masala with roti and curd', v: 1, ic: 'dal', slot: 'l',
     x: [['chana', 50, 'pro'], ['greek', 100, 'fix'], ['whey', 12, 'fix'], ['oil', 7.5, 'fat'], ['atta', 25, 'carb'], ['tomato', 100, 'veg'], ['onion', 50, 'fix']],
     m: [
-      'Weigh 50 g DRY chickpeas, soak overnight, pressure-cook 6 whistles.',
+      'Weigh {chana} DRY chickpeas, soak overnight, pressure-cook 6 whistles.',
       'Heat the measured oil, brown the onion, add tomato and chana masala.',
       'Add the chickpeas and simmer 10 minutes until thick.',
-      'One roti from 30 g atta, cooked dry. Yoghurt on the side.',
+      'One roti from {atta} of atta, cooked dry. Yoghurt on the side.',
     ],
   },
   lv6: {
@@ -202,14 +202,14 @@ export const M: Record<string, Meal> = {
       'Press the weighed tofu between two plates 10 minutes, then crumble.',
       'Heat the measured oil, soften onion, tomato and capsicum.',
       'Add the tofu with turmeric, chilli and salt. Cook 5 minutes. Season harder than feels right - tofu needs it.',
-      'One roti from 35 g atta. Yoghurt on the side.',
+      'One roti from {atta} of atta. Yoghurt on the side.',
     ],
   },
   sn1: {
     t: 'Raita with almonds', v: 1, ic: 'yoghurt', slot: 's',
     x: [['greek', 110, 'pro'], ['almond', 10, 'fix'], ['cucumber', 100, 'veg']],
     m: [
-      'Use Fage, not plain dahi. Same bowl, three times the protein — 11 g against 4 g.',
+      'Use Fage, not plain dahi. Same bowl, three times the protein.',
       'Loosen it with a spoon of water if it is too thick, then salt, roasted cumin and the cucumber.',
       'Count the almonds out — about eight. They are 58 kcal, which is why they are counted and not grabbed by the handful.',
     ],
@@ -225,7 +225,7 @@ export const M: Record<string, Meal> = {
     t: 'Whey shake and almonds', v: 1, ic: 'whey', slot: 's',
     x: [['whey', 22, 'pro'], ['almond', 10, 'fix']],
     m: [
-      '22 g isolate in 250 ml cold water. Take it within an hour of training.',
+      '{whey} isolate in 250 ml cold water. Take it within an hour of training.',
       'About eight almonds alongside — counted, not a handful.',
     ],
   },
@@ -236,7 +236,7 @@ export const M: Record<string, Meal> = {
       'Weigh the cod RAW. Season with salt, pepper, lemon and a pinch of chilli.',
       'Bake at 200 C for 12 minutes. No batter, no breadcrumb coating.',
       'Peel and dice the lauki, cook in the measured oil with cumin and turmeric, lid on, 10 minutes.',
-      'One roti from 45 g atta, cooked dry.',
+      'One roti from {atta} of atta, cooked dry.',
     ],
   },
   dnv2: {
@@ -246,7 +246,7 @@ export const M: Record<string, Meal> = {
       'Weigh the chicken RAW. Marinate 30 minutes in the yoghurt with ginger, garlic, chilli and garam masala. Use the Fage from the fridge — no separate tub of dahi.',
       'Grill or air-fry at 200 C for 18 minutes, turning once.',
       'Brush with the measured oil only at the end, never before.',
-      'Slice the salad raw with lemon and salt. One roti from 40 g atta.',
+      'Slice the salad raw with lemon and salt. One roti from {atta} of atta.',
     ],
   },
   dnv3: {
@@ -256,17 +256,17 @@ export const M: Record<string, Meal> = {
       'Weigh the cod RAW and cut into large pieces.',
       'Heat the measured oil, make the base with mustard seeds, curry leaves, onion and tomato.',
       'Add the cauliflower and 150 ml water, cook 8 minutes.',
-      'Slide the fish in for the last 6 minutes. Do not stir hard or it breaks. One roti from 40 g atta.',
+      'Slide the fish in for the last 6 minutes. Do not stir hard or it breaks. One roti from {atta} of atta.',
     ],
   },
   dv1: {
     t: 'Moong dal, karela and roti', v: 1, ic: 'dal', slot: 'd',
     x: [['moong', 50, 'pro'], ['greek', 90, 'fix'], ['whey', 10, 'fix'], ['oil', 10, 'fat'], ['karela', 150, 'veg'], ['atta', 25, 'carb'], ['tomato', 60, 'fix']],
     m: [
-      'Weigh 50 g DRY moong dal. Rinse and pressure-cook with turmeric, 3 whistles.',
+      'Weigh {moong} DRY moong dal. Rinse and pressure-cook with turmeric, 3 whistles.',
       'Slice the karela thin, salt it, rest 10 minutes, then squeeze out the bitter water.',
       'Heat the measured oil, temper cumin and garlic, fry the karela 8 minutes.',
-      'Pour the tempering over the dal. One roti from 30 g atta, yoghurt on the side.',
+      'Pour the tempering over the dal. One roti from {atta} of atta, yoghurt on the side.',
     ],
   },
   dv2: {
@@ -276,37 +276,37 @@ export const M: Record<string, Meal> = {
       'Weigh the paneer, cube it, marinate 20 minutes in the yoghurt with tikka masala. Same tub as breakfast.',
       'Thread with capsicum and onion, grill or air-fry 12 minutes at 200 C.',
       'Brush the measured oil on at the end, not before.',
-      'Raw cucumber on the side with lemon. One roti from 35 g atta.',
+      'Raw cucumber on the side with lemon. One roti from {atta} of atta.',
     ],
   },
   dv3: {
     t: 'Soya keema with roti', v: 1, ic: 'soya', slot: 'd',
     x: [['soya', 40, 'pro'], ['oil', 10, 'fat'], ['peas', 80, 'veg'], ['atta', 30, 'carb'], ['onion', 50, 'fix'], ['tomato', 60, 'fix']],
     m: [
-      'Weigh 40 g DRY soya granules, soak 8 minutes in boiling water, squeeze dry.',
+      'Weigh {soya} DRY soya granules, soak 8 minutes in boiling water, squeeze dry.',
       'Heat the measured oil, brown the onion, add ginger, garlic, tomato and masala.',
       'Add the soya and peas, splash of water, cook 10 minutes until dry.',
-      'One roti from 45 g atta.',
+      'One roti from {atta} of atta.',
     ],
   },
   dv4: {
     t: 'Masoor dal with gobi and roti', v: 1, ic: 'dal', slot: 'd',
     x: [['masoor', 50, 'pro'], ['greek', 90, 'fix'], ['whey', 10, 'fix'], ['oil', 10, 'fat'], ['cauli', 200, 'veg'], ['atta', 25, 'carb'], ['tomato', 60, 'fix']],
     m: [
-      'Weigh 50 g DRY masoor dal, rinse, cook with turmeric until soft.',
+      'Weigh {masoor} DRY masoor dal, rinse, cook with turmeric until soft.',
       'Heat the measured oil, temper cumin, garlic and dried chilli.',
       'Add the cauliflower florets, cover, cook 10 minutes without extra oil.',
-      'Pour half the tempering into the dal. One roti from 30 g atta, yoghurt on the side.',
+      'Pour half the tempering into the dal. One roti from {atta} of atta, yoghurt on the side.',
     ],
   },
   dv5: {
     t: 'Chana dal with methi and roti', v: 1, ic: 'dal', slot: 'd',
     x: [['chanadal', 45, 'pro'], ['greek', 90, 'fix'], ['whey', 10, 'fix'], ['oil', 10, 'fat'], ['methi', 120, 'veg'], ['atta', 25, 'carb'], ['onion', 40, 'fix']],
     m: [
-      'Weigh 45 g DRY chana dal, soak 30 minutes, pressure-cook 4 whistles.',
+      'Weigh {chanadal} DRY chana dal, soak 30 minutes, pressure-cook 4 whistles.',
       'Wash the methi leaves well, chop, and wilt them in the measured oil with garlic.',
       'Combine, season, simmer 5 minutes.',
-      'One roti from 30 g atta, yoghurt on the side.',
+      'One roti from {atta} of atta, yoghurt on the side.',
     ],
   },
   dv6: {
@@ -316,7 +316,7 @@ export const M: Record<string, Meal> = {
       'Press the weighed tofu 15 minutes, cut into slabs, season hard.',
       'Pan-grill in the measured oil, 4 minutes a side, until the edges colour.',
       'Cook the beans with cumin, garlic and a splash of water, lid on, 8 minutes.',
-      'One roti from 35 g atta, yoghurt on the side.',
+      'One roti from {atta} of atta, yoghurt on the side.',
     ],
   },
 };

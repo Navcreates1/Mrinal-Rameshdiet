@@ -13,7 +13,9 @@
    The calendar is now a DEFAULT, not a verdict. Every day carries a type the
    user can set; the festival windows pre-set it and say why. */
 
-import { isFestivalVeg, festivalOn, dayOf, DAYS } from '../data/calendar.ts';
+import { isFestivalVeg, festivalOn, dayOf, indexOf, DAYS } from '../data/calendar.ts';
+import { M } from '../data/meals.ts';
+import { F } from '../data/foods.ts';
 import { load, save } from '../lib/storage.ts';
 import type { Saved } from '../lib/storage.ts';
 import type { PersonId } from '../data/people.ts';
@@ -106,28 +108,140 @@ export function persist(): void {
   });
 }
 
+/* Saved state is UNTRUSTED INPUT.
+
+   It has been through an older version of this app, a browser that may have
+   half-written it, and anything a person can type into a console. A partial
+   `{"plans":{"0":{}}}` used to reach todayPlan() and throw
+   `Cannot read properties of undefined`, which left a white page below the
+   header and no way back except clearing site data — which nobody in this
+   household knows how to do.
+
+   Every field is now checked on its own and falls back on its own. One bad
+   week plan loses that week, not the weigh-ins, the prices and the cupboard. */
+
+const isStr = (v: unknown): v is string => typeof v === 'string';
+const strArray = (v: unknown): string[] => (Array.isArray(v) ? v.filter(isStr) : []);
+const strMap = (v: unknown): Record<string, string> => {
+  const out: Record<string, string> = {};
+  if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (isStr(x)) out[k] = x;
+  return out;
+};
+const boolMap = (v: unknown): Record<string, boolean> => {
+  const out: Record<string, boolean> = {};
+  if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (typeof x === 'boolean') out[k] = x;
+  return out;
+};
+const numMap = (v: unknown): Record<string, number> => {
+  const out: Record<string, number> = {};
+  if (v && typeof v === 'object')
+    for (const [k, x] of Object.entries(v)) if (typeof x === 'number' && Number.isFinite(x) && x >= 0) out[k] = x;
+  return out;
+};
+
+const cleanWeights = (v: unknown): AppState['weights'] => {
+  const one = (a: unknown): { d: number; kg: number }[] =>
+    Array.isArray(a)
+      ? a.filter((w): w is { d: number; kg: number } =>
+          !!w && typeof w === 'object'
+          && Number.isFinite((w as { d: unknown }).d) && Number.isFinite((w as { kg: unknown }).kg)
+          && (w as { kg: number }).kg >= MIN_KG && (w as { kg: number }).kg <= MAX_KG)
+      : [];
+  const o = (v ?? {}) as { M?: unknown; R?: unknown };
+  return { M: one(o.M), R: one(o.R) };
+};
+
+/** A week plan is only kept if every meal id in it still exists. A dish removed
+    from the library must not blank the app for anyone who had it planned. */
+const cleanPlans = (v: unknown): Record<number, WeekPlan> => {
+  const out: Record<number, WeekPlan> = {};
+  if (!v || typeof v !== 'object') return out;
+  for (const [k, raw] of Object.entries(v)) {
+    const w = Number(k);
+    if (!Number.isInteger(w) || w < 0) continue;
+    const p = raw as { days?: unknown; builtAt?: unknown };
+    if (!Array.isArray(p?.days)) continue;
+    const days = p.days.map(d => {
+      if (d === null || d === undefined) return null;
+      const day = d as { core?: unknown; later?: unknown };
+      const core = strArray(day.core).filter(id => M[id]);
+      if (core.length !== 3) return null;
+      return { core, later: strArray(day.later).filter(id => M[id]) };
+    });
+    if (!days.some(d => d !== null)) continue;
+    out[w] = { days, builtAt: isStr(p.builtAt) ? p.builtAt : '' };
+  }
+  return out;
+};
+
+const cleanSwaps = (v: unknown): Record<string, Swap> => {
+  const out: Record<string, Swap> = {};
+  if (!v || typeof v !== 'object') return out;
+  for (const [k, raw] of Object.entries(v)) {
+    const sw = raw as { fid?: unknown; g?: unknown };
+    if (isStr(sw?.fid) && F[sw.fid] && typeof sw.g === 'number' && Number.isFinite(sw.g) && sw.g > 0)
+      out[k] = { fid: sw.fid, g: sw.g };
+  }
+  return out;
+};
+
+const cleanPicks = (v: unknown): Picks => {
+  const p = (v ?? {}) as Record<string, unknown>;
+  return {
+    b: strArray(p.b).filter(id => M[id]), l: strArray(p.l).filter(id => M[id]),
+    d: strArray(p.d).filter(id => M[id]), later: strArray(p.later).filter(id => M[id]),
+    veg: strArray(p.veg).filter(id => F[id]),
+    wantLater: p.wantLater === true,
+  };
+};
+
+const cleanDayTypes = (v: unknown): Record<number, DayType> => {
+  const out: Record<number, DayType> = {};
+  if (!v || typeof v !== 'object') return out;
+  for (const [k, t] of Object.entries(v)) {
+    const i = Number(k);
+    if (Number.isInteger(i) && i >= 0 && i < DAYS && (t === 'normal' || t === 'vegetarian' || t === 'out'))
+      out[i] = t;
+  }
+  return out;
+};
+
+export const MIN_KG = 30;
+export const MAX_KG = 200;
+
 export function restore(): void {
   const s = load();
-  state.weights = s.w;
-  state.have = s.have ?? {};
-  state.ticked = s.ticked ?? {};
-  state.prices = s.prices ?? {};
-  state.plans = (s.plans ?? {}) as Record<number, WeekPlan>;
-  state.swaps = (s.swaps ?? {}) as Record<string, Swap>;
-  const pick = (s.pick ?? {}) as { picks?: Picks; dayType?: Record<number, DayType>; slotPick?: Record<string, string> };
-  state.picks = { ...emptyPicks(), ...(pick.picks ?? {}) };
-  state.dayType = pick.dayType ?? {};
-  state.slotPick = pick.slotPick ?? {};
-  const prefs = (s.prefs ?? {}) as { mode?: AppState['mode']; who?: Who; logWho?: PersonId };
-  if (prefs.mode) state.mode = prefs.mode;
-  if (prefs.who) state.who = prefs.who;
-  if (prefs.logWho) state.logWho = prefs.logWho;
+  state.weights = cleanWeights(s.w);
+  state.have = boolMap(s.have);
+  state.ticked = boolMap(s.ticked);
+  state.prices = numMap(s.prices);
+  state.plans = cleanPlans(s.plans);
+  state.swaps = cleanSwaps(s.swaps);
+  const pick = (s.pick ?? {}) as Record<string, unknown>;
+  state.picks = cleanPicks(pick.picks);
+  state.dayType = cleanDayTypes(pick.dayType);
+  state.slotPick = strMap(pick.slotPick);
+  const prefs = (s.prefs ?? {}) as Record<string, unknown>;
+  if (prefs.mode === 'choose' || prefs.mode === 'fixed') state.mode = prefs.mode;
+  if (prefs.who === 'both' || prefs.who === 'M' || prefs.who === 'R') state.who = prefs.who;
+  if (prefs.logWho === 'M' || prefs.logWho === 'R') state.logWho = prefs.logWho;
 
-  const today = new Date();
-  const at = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-  const i = Math.round((at - dayOf(0).getTime()) / 864e5);
-  state.day = Math.min(DAYS - 1, Math.max(0, i));
+  /* indexOf counts calendar days, so this is right on both sides of the
+     October clock change. Before the fix, opening the app on 1 November put
+     you on 31 October's plan. */
+  const i = indexOf(new Date());
+  state.day = i ?? (new Date() < dayOf(0) ? 0 : DAYS - 1);
   state.shopWeek = Math.floor(state.day / 7);
+}
+
+/** Wipe everything and start clean. The way back from a corrupted state. */
+export function resetAll(): void {
+  state.weights = { M: [], R: [] };
+  state.have = {}; state.ticked = {}; state.prices = {};
+  state.plans = {}; state.swaps = {}; state.slotPick = {};
+  state.picks = emptyPicks(); state.dayType = {};
+  state.step = 0; state.tab = 'today';
+  persist();
 }
 
 /** Swap keys carry the meal id, so changing the dish in a slot cannot drag the

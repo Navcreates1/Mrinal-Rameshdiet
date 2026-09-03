@@ -16,7 +16,7 @@ import { solveDay } from '../lib/portion.ts';
 import { buildList, GROUP_LABEL } from '../lib/shopping.ts';
 import { canSave } from '../lib/storage.ts';
 import { dayText, shopText, copy } from '../lib/cronometer.ts';
-import { state, persist, restore, isVegDay, dayType, setDayType, reasonFor, emptyPicks } from './state.ts';
+import { state, persist, restore, resetAll, isVegDay, dayType, setDayType, reasonFor, emptyPicks } from './state.ts';
 import type { TabId, DayType, Who } from './state.ts';
 import { viewToday, todayPlan, solveToday } from './today.ts';
 import { viewPlan, viewFoods, viewWeight, viewGuide, logWeight, setFoodQuery, setFoodFilter } from './tabs.ts';
@@ -70,16 +70,46 @@ function drawNav(): void {
       <svg viewBox="0 0 24 24"><path d="${path}"/></svg><span>${label}</span></button>`).join('');
 }
 
+/* Whatever goes wrong, the screen says something.
+
+   A partial object in localStorage used to throw inside the Today view and
+   leave a white page below the header, with no route back but clearing site
+   data. Mrinal and Ramesh will not open a console. state.ts now validates
+   everything on read, so this should never fire — which is exactly why it has
+   to exist: the failure it catches is the one nobody predicted. */
+function crashScreen(err: unknown, where: string): string {
+  const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+  return `<div class="sec"><h2>Something went wrong on this screen</h2>
+    <p>The rest of the app still works — try another tab first. If it keeps
+       happening, starting again clears the saved plan on this device. Weigh-ins
+       go too, so write them down first if they matter.</p></div>
+  <div class="panel">
+    <p><b>What broke:</b> the ${esc(where)} screen.</p>
+    <p class="src">${esc(detail)}</p>
+    <div class="copybar" style="margin-top:14px">
+      <button class="alt" data-tab="today">Back to Today</button>
+      <button data-reset="1">Start again</button>
+    </div>
+  </div>`;
+}
+
 export function draw(): void {
   const views: Record<TabId, () => string> = {
     today: viewToday, shop: viewShop, plan: viewPlan,
     foods: viewFoods, weight: viewWeight, guide: viewGuide,
   };
+  let body: string;
+  try {
+    body = views[state.tab]();
+  } catch (err) {
+    console.error(`[draw] ${state.tab} failed`, err);
+    body = crashScreen(err, state.tab);
+  }
   el('main').innerHTML =
     (!canSave() ? `<div class="banner warn">${ico('rice')}<div><b>Nothing typed here will be kept.</b>
       This browser is blocking storage — private mode, most likely. Weigh-ins, prices and
-      cupboard answers will vanish on reload.</div></div>` : '') + views[state.tab]();
-  drawHero(); drawStrip(); drawNav();
+      cupboard answers will vanish on reload.</div></div>` : '') + body;
+  try { drawHero(); drawStrip(); drawNav(); } catch (err) { console.error('[draw] chrome failed', err); }
   window.scrollTo({ top: 0 });
 }
 
@@ -170,10 +200,15 @@ function toggle(list: string[], id: string): void {
 }
 
 function onClick(e: Event): void {
-  const t = (e.target as HTMLElement).closest('[data-tab],[data-day],[data-who],[data-mode],[data-step],[data-week],[data-daytype],[data-pickmeal],[data-pickveg],[data-suggest],[data-suggestveg],[data-wantlater],[data-buildweek],[data-have],[data-tick],[data-price],[data-setprice],[data-swap],[data-doswap],[data-pickslot],[data-doslot],[data-copyday],[data-copyshop],[data-logwho],[data-foodfilter],#wAdd,#sheetClose') as HTMLElement | null;
+  const t = (e.target as HTMLElement).closest('[data-tab],[data-reset],[data-day],[data-who],[data-mode],[data-step],[data-week],[data-daytype],[data-pickmeal],[data-pickveg],[data-suggest],[data-suggestveg],[data-wantlater],[data-buildweek],[data-have],[data-tick],[data-price],[data-setprice],[data-swap],[data-doswap],[data-pickslot],[data-doslot],[data-copyday],[data-copyshop],[data-logwho],[data-foodfilter],#wAdd,#sheetClose') as HTMLElement | null;
   if (!t) return;
   const d = t.dataset;
 
+  if (d.reset) {
+    if (!confirm('Clear the saved plan on this device and start again?\n\nWeigh-ins, prices and cupboard answers go too.')) return;
+    resetAll();
+    return draw();
+  }
   if (d.tab) { state.tab = d.tab as TabId; persist(); return draw(); }
   if (d.day) { state.day = Number(d.day); return draw(); }
   if (d.who) { state.who = d.who as Who; persist(); return draw(); }
@@ -291,7 +326,8 @@ function onClick(e: Event): void {
 
 export function boot(): void {
   document.body.insertAdjacentHTML('afterbegin', SPRITE);
-  restore();
+  /* If restore itself throws, start from defaults rather than never rendering. */
+  try { restore(); } catch (err) { console.error('[boot] restore failed, starting clean', err); }
   document.addEventListener('click', onClick);
   document.getElementById('scrim')!.addEventListener('click', closeSheet);
   document.addEventListener('input', e => {
@@ -301,6 +337,11 @@ export function boot(): void {
       if (again) { again.focus(); again.setSelectionRange(at ?? 0, at ?? 0); } }
   });
   document.addEventListener('keydown', e => { if ((e as KeyboardEvent).key === 'Escape') closeSheet(); });
+  /* Last line of defence: a listener that cannot itself be the thing that
+     breaks. If a click handler throws, the next draw still happens. */
+  window.addEventListener('error', () => {
+    if (el('main').innerHTML.trim().length < 40) { state.tab = 'today'; draw(); }
+  });
   draw();
 }
 
